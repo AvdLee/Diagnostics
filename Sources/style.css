@@ -180,6 +180,13 @@ footer {
   vertical-align: middle;
 }
 
+#log-filter {
+  width: 180px;
+  padding: 6px 8px;
+  font-size: 1em;
+  resize: vertical;
+}
+
 @media(max-width: 768px) {
   body {
     margin: 20px;
