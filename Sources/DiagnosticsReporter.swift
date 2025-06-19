@@ -157,6 +157,11 @@ extension DiagnosticsReporter {
         html += "<li><input type=\"checkbox\" id=\"system-logs\" name=\"system-logs\" checked><label for=\"system-logs\">Show system logs</label></li>"
         html += "<li><input type=\"checkbox\" id=\"error-logs\" name=\"error-logs\" checked><label for=\"error-logs\">Show error logs</label></li>"
         html += "<li><input type=\"checkbox\" id=\"debug-logs\" name=\"debug-logs\" checked><label for=\"debug-logs\">Show debug logs</label></li>"
+        html += "<li><textarea id="log-filter" placeholder="Regex" rows="3"></textarea></li>"
+        html += "<li><button id="filter-btn">Filter</button></li>"
+        html += "<li><code>Example OR: <b>error|warning</b></code></li>"
+        html += "<li><code>Example AND: <b>(?=.*error)(?=.*timeout)</b></code></li>"
+        html += "<li><code>Example Prefix: <b>^[INFO]:</b></code></li>"
         html += "</ul></nav></aside>"
         return html
     }
