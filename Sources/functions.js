@@ -14,7 +14,25 @@ const expandElements = shouldExpand => {
 
 function showSystemLogs(shouldShow, className) {
     document.querySelectorAll(className).forEach(function(el) {
-        if (shouldShow) {
+        el.style.display = shouldShow ? 'block' : 'none';
+    });
+}
+
+function showSystemLogsWithFilter(shouldShow, className, filterString) {
+    let regex = null;
+    if (filterString) {
+        try {
+            regex = new RegExp(filterString, 'i');
+        } catch (e) {
+            regex = null;
+        }
+    }
+    document.querySelectorAll(className).forEach(function (el) {
+        if (regex && !regex.test(el.textContent)) {
+            el.style.display = 'none';
+        } else if (filterString && !regex && !el.textContent.includes(filterString)) {
+            el.style.display = 'none';
+        } else if (shouldShow) {
             el.style.display = 'block';
         } else {
             el.style.display = 'none';
@@ -53,4 +71,11 @@ window.onload = (function () {
         showSystemLogs(false, '.error');
       }
     });
+
+    document.getElementById('filter-btn').addEventListener('click', function () {
+      var searchValue = document.getElementById('log-filter').value.trim();
+      showSystemLogsWithFilter(document.getElementById('system-logs').checked, '.system', searchValue);
+      showSystemLogsWithFilter(document.getElementById('debug-logs').checked, '.debug', searchValue);
+      showSystemLogsWithFilter(document.getElementById('error-logs').checked, '.error', searchValue);
+     });
 });
