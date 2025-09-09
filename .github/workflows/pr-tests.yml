@@ -20,8 +20,6 @@ jobs:
       DEBUG: NO # Set to YES to show raw xcode logs and disable parallel testing. Will also be enabled when ACTIONS_STEP_DEBUG == true, happening in GitHub Action Relaunches.
 
     steps:
-      - name: Disable credential helper for just this repo
-        run: git config credential.helper ""
       - name: Checkout code
         uses: actions/checkout@v4
         with:
