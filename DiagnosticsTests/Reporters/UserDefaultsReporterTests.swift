@@ -30,11 +30,11 @@ final class UserDefaultsReporterTests: XCTestCase {
         let diagnostics = UserDefaultsReporter(
             userDefaults: userDefaults,
             keys: [key1, key2]
-        ).report().diagnostics as! [String: Any]
+        ).report().diagnostics as! [String: String]
 
         XCTAssertEqual(diagnostics.count, 2)
-        XCTAssertEqual(diagnostics[key1] as? String, expectedValue1)
-        XCTAssertEqual(diagnostics[key2] as? String, expectedValue2)
+        XCTAssertEqual(diagnostics[key1], expectedValue1)
+        XCTAssertEqual(diagnostics[key2], expectedValue2)
         XCTAssertNil(diagnostics[unexpectedKey])
     }
 

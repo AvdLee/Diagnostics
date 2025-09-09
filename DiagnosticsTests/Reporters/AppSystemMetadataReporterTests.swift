@@ -25,7 +25,7 @@ final class AppSystemMetadataReporterTests: XCTestCase {
         )
         XCTAssertEqual(
             metadata[AppSystemMetadataReporter.MetadataKey.appLanguage.rawValue],
-            "en-US"
+            "en"
         )
 
         AppSystemMetadataReporter.MetadataKey.allCases.forEach { key in
