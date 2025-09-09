@@ -392,7 +392,7 @@ If you prefer not to use any of the aforementioned dependency managers, you can 
 
 See [CHANGELOG.md](https://github.com/AvdLee/Diagnostics/blob/main/Changelog.md) for a list of changes.
 
-## Projects using Roadmap
+## Projects using Diagnostics
 - [RocketSim](https://www.rocketsim.app)
 - [Stock Analyzer](https://apps.apple.com/nl/app/stock-analyzer/id1614853142)
 
