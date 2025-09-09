@@ -4,8 +4,6 @@ As the creators, and maintainers of this project, we're glad to share our projec
 
 Following these guidelines helps to communicate that you respect the time of the developers managing and developing this open source project. In return, they should reciprocate that respect in addressing your issue or assessing patches and features.
 
-In general, we expect you to follow our [Code of Conduct](https://github.com/WeTransfer/Diagnostics/blob/master/CODE_OF_CONDUCT.md).
-
 ## Using the issue tracker for bug reports, feature requests and discussions
 
 ### First time contributors
@@ -28,7 +26,7 @@ Guidelines for bug reports:
    reported.
 
 2. **Check if the issue has been fixed** &mdash; try to reproduce it using the
-   latest `master` or development branch in the repository.
+   latest `main` or development branch in the repository.
 
 3. **Isolate the problem** &mdash; provide clear steps to reproduce.
 
@@ -87,11 +85,11 @@ project:
 
    ```bash
    # Clone your fork of the repo into the current directory
-   git clone git@github.com:WeTransfer/Diagnostics.git
+   git clone git@github.com:AvdLee/Diagnostics.git
    # Navigate to the newly cloned directory
    cd Diagnostics
    # Assign the original repo to a remote called "upstream"
-   git remote add upstream git@github.com:WeTransfer/Diagnostics.git
+   git remote add upstream git@github.com:AvdLee/Diagnostics.git
    ```
 
 2. If you cloned a while ago, get the latest changes from upstream:
