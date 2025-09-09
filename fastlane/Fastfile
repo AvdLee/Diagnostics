@@ -1,0 +1,73 @@
+desc 'Run Diagnostics tests'
+lane :test_diagnostics do |options|
+  test_package(package_name: 'Diagnostics', package_path: '.', parallel_testing: true)
+end
+
+desc 'Runs tests for a specific package'
+desc ''
+desc '#### Options'
+desc ' * **`package_name`**: The name of the package to test'
+desc ' * **`package_path`**: The path to the package'
+desc ''
+lane :test_package do |options|
+  UI.abort_with_message! "Package path is missing" unless options[:package_path]
+  UI.abort_with_message! "Package name is missing" unless options[:package_name]
+  test_project(options)
+end
+
+desc 'Runs tests for an external project'
+desc ''
+desc '#### Options'
+desc " * **`scheme`**: The project's scheme"
+desc ' * **`project_path`**: The path to the project'
+desc ' * **`project_name`**: The name of the project'
+desc ' * **`parallel_testing`**: Enables parallel testing'
+desc ' * **`xcargs`**: An optional extra set of arguments to pass to Fastlane Scan'
+desc ' * **`destination`**: ..'
+lane :test_project do |options|
+  # Set timeout to prevent xcodebuild -list -project to take to much retries.
+  ENV['FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT'] = '30'
+  ENV['FASTLANE_XCODE_LIST_TIMEOUT'] = '30'
+
+  if options[:package_path].nil?
+    project_path = "#{options[:project_path]}#{options[:project_name]}.xcodeproj"
+  end
+
+  scheme = options[:scheme] || options[:package_name]
+  parallel_testing = options.fetch(:parallel_testing, true)
+  
+  if ENV["DEBUG"] == "YES" || ENV["ACTIONS_STEP_DEBUG"] == "true"
+    UI.message("🪲🪲🪲 Enabled DEBUG mode. 🪲🪲🪲")
+    # Parallel testing disables Xcode output.
+    parallel_testing = false
+    output_style = 'raw'
+  end
+
+  # Remove any leftover reports before running so local runs won't fail due to an existing file.
+  sh("rm -rf #{Dir.pwd}/../build/reports/#{scheme}.xcresult")
+
+  scan(
+    step_name: options[:step_name] || "Scan - #{scheme}",
+    scheme: scheme,
+    testplan: options[:testplan],
+    project: project_path,
+    destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=latest",
+    fail_build: true,
+    skip_slack: true,
+    output_types: '',
+    output_style: output_style,
+    xcargs: "CI='true' RECORD_SNAPSHOTS=${ENV['RECORD_SNAPSHOTS']}",
+    xcodebuild_formatter: 'xcbeautify --renderer github-actions --preserve-unbeautified',
+    suppress_xcode_output: false,
+    include_simulator_logs: false,
+    prelaunch_simulator: false,
+    parallel_testing: parallel_testing,
+    result_bundle: true,
+    output_directory: Dir.pwd + "/../build/reports/",
+    package_path: options[:package_path], # Optional path to the SPM package to test.
+    build_for_testing: options.fetch(:build_for_testing, nil),
+    test_without_building: options.fetch(:test_without_building, nil),
+    disable_package_automatic_updates: false, # Makes xcodebuild -showBuildSettings more reliable too.
+    skip_package_dependencies_resolution: options.fetch(:disable_automatic_package_resolution, false)
+  )
+end
