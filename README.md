@@ -395,6 +395,7 @@ See [CHANGELOG.md](https://github.com/AvdLee/Diagnostics/blob/main/Changelog.md)
 ## Projects using Diagnostics
 - [RocketSim](https://www.rocketsim.app)
 - [Stock Analyzer](https://apps.apple.com/nl/app/stock-analyzer/id1614853142)
+- [Helm for App Store Connect](https://apps.apple.com/app/apple-store/id6479357934)
 
 ## Authors
 This library was originally created by Antoine van der Lee as part of a WeTransfer hackathon. Process has been reported on [Twitter](https://twitter.com/twannl/status/1201474263200550917?s=20). 
