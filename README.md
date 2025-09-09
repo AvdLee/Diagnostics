@@ -392,6 +392,10 @@ If you prefer not to use any of the aforementioned dependency managers, you can 
 
 See [CHANGELOG.md](https://github.com/AvdLee/Diagnostics/blob/main/Changelog.md) for a list of changes.
 
+## Projects using Roadmap
+- [RocketSim](https://www.rocketsim.app)
+- [Stock Analyzer](https://apps.apple.com/nl/app/stock-analyzer/id1614853142)
+
 ## Authors
 This library was originally created by Antoine van der Lee as part of a WeTransfer hackathon. Process has been reported on [Twitter](https://twitter.com/twannl/status/1201474263200550917?s=20). 
 
