@@ -30,8 +30,8 @@ public protocol SmartInsightProviding {
     /// The name of the smart insight.
     var name: String { get }
 
-    /// The result of this insight, see `InsightResult`.
-    var result: InsightResult { get }
+    /// Generates the result of this insight, see `InsightResult`.
+    nonisolated(nonsending) func generateResult() async -> InsightResult?
 }
 
 /// Reports smart insights based on given variables.
@@ -52,10 +52,14 @@ public struct SmartInsightsReporter: DiagnosticsReporting {
         insights = defaultInsights.compactMap { $0 }
     }
 
-    public func report() -> DiagnosticsChapter {
-        let diagnostics: [String: String] = insights.compactMap { $0 }.reduce(into: [:]) { metadata, insight in
-            metadata[insight.name] = insight.result.message
+    public nonisolated(nonsending) func report() async -> DiagnosticsChapter {
+        var metadata: [String: String] = [:]
+        
+        for insight in insights {
+            guard let result = await insight.generateResult() else { continue }
+            metadata[insight.name] = result.message
         }
-        return DiagnosticsChapter(title: title, diagnostics: diagnostics)
+        
+        return DiagnosticsChapter(title: title, diagnostics: metadata)
     }
 }

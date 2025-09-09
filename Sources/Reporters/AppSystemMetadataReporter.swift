@@ -77,7 +77,7 @@ public struct AppSystemMetadataReporter: DiagnosticsReporting {
             MetadataKey.device.rawValue: hardware,
             MetadataKey.system.rawValue: system,
             MetadataKey.freeSpace.rawValue: "\(Device.freeDiskSpace) of \(Device.totalDiskSpace)",
-            MetadataKey.deviceLanguage.rawValue: Locale.current.languageCode ?? "Unknown",
+            MetadataKey.deviceLanguage.rawValue: Locale.current.language.languageCode?.identifier ?? "Unknown",
             MetadataKey.appLanguage.rawValue: Locale.preferredLanguages[0]
         ]
         #if os(iOS) && !targetEnvironment(macCatalyst)
@@ -93,7 +93,7 @@ public struct AppSystemMetadataReporter: DiagnosticsReporting {
 }
 
 #if os(iOS) && !targetEnvironment(macCatalyst)
-extension CTCellularDataRestrictedState: CustomStringConvertible {
+extension CTCellularDataRestrictedState: @retroactive CustomStringConvertible {
      public var description: String {
         switch self {
         case .restricted:

@@ -13,24 +13,30 @@ import Foundation
 struct UpdateAvailableInsight: SmartInsightProviding {
 
     let name = "Update available"
-    let result: InsightResult
+    let bundleIdentifier: String
+    let currentVersion: String
+    let itunesRegion: String
+    let appMetadataCompletion: (() -> Result<AppMetadataResults, Error>)?
 
     init?(
         bundleIdentifier: String? = Bundle.main.bundleIdentifier,
         currentVersion: String = Bundle.appVersion,
-        itunesRegion: String = Locale.current.regionCode ?? "us",
+        itunesRegion: String = Locale.current.region?.identifier ?? "us",
         appMetadataCompletion: (() -> Result<AppMetadataResults, Error>)? = nil
     ) {
         guard let bundleIdentifier else { return nil }
+        
+        self.bundleIdentifier = bundleIdentifier
+        self.currentVersion = currentVersion
+        self.itunesRegion = itunesRegion
+        self.appMetadataCompletion = appMetadataCompletion
+    }
+    
+    func generateResult() async -> InsightResult? {
         let url = URL(string: "https://itunes.apple.com/\(itunesRegion)/lookup?bundleId=\(bundleIdentifier)")!
 
-        let group = DispatchGroup()
-        group.enter()
-
         var appMetadata: AppMetadata?
-        let request = URLRequest(url: url)
         if let appMetadataCompletion {
-            group.leave()
             switch appMetadataCompletion() {
             case .success(let result):
                 appMetadata = result.results.first
@@ -38,22 +44,10 @@ struct UpdateAvailableInsight: SmartInsightProviding {
                 return nil
             }
         } else {
-            let task = URLSession.shared.dataTask(with: request) { data, _, _ in
-                group.leave()
-                if let data {
-                    let result = try? JSONDecoder().decode(AppMetadataResults.self, from: data)
-                    appMetadata = result?.results.first
-                }
-            }
-
-            /// Set a timeout of 1 second to prevent the call from taking too long unexpectedly.
-            /// Though: the request should be super fast since it's a small resource.
-            let result = group.wait(timeout: .now() + .seconds(1))
-            task.cancel()
-
-            guard result == .success else {
+            guard let (data, _) = try? await URLSession.shared.data(from: url), let result = try? JSONDecoder().decode(AppMetadataResults.self, from: data) else {
                 return nil
             }
+            appMetadata = result.results.first
         }
 
         guard let appMetadata else {
@@ -62,11 +56,11 @@ struct UpdateAvailableInsight: SmartInsightProviding {
 
         switch currentVersion.compare(appMetadata.version) {
         case .orderedSame:
-            self.result = .success(message: "The user is using the latest app version \(appMetadata.version)")
+            return .success(message: "The user is using the latest app version \(appMetadata.version)")
         case .orderedDescending:
-            self.result = .success(message: "The user is using a newer version \(currentVersion)")
+            return .success(message: "The user is using a newer version \(currentVersion)")
         case .orderedAscending:
-            self.result = .warn(message: "The user could update to \(appMetadata.version)")
+            return .warn(message: "The user could update to \(appMetadata.version)")
         }
     }
 }

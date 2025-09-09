@@ -15,17 +15,16 @@ import Foundation
 struct CellularAllowedInsight: SmartInsightProviding {
 
     let name = "Cellular data allowed"
-    let result: InsightResult
 
-    init() {
+    func generateResult() async -> InsightResult? {
         let cellularData = CTCellularData()
         switch cellularData.restrictedState {
         case .restricted:
-            result = .error(message: "The user has disabled cellular data usage for this app.")
+            return .error(message: "The user has disabled cellular data usage for this app.")
         case .notRestricted:
-            result = .success(message: "Cellular data is enabled for this app.")
+            return .success(message: "Cellular data is enabled for this app.")
         default:
-            result = .warn(message: "Unable to determine whether cellular data is allowed for this app.")
+            return .warn(message: "Unable to determine whether cellular data is allowed for this app.")
         }
     }
 }

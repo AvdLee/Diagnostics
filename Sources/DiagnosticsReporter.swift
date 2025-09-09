@@ -10,7 +10,7 @@ import Foundation
 
 public protocol DiagnosticsReporting {
     /// Creates the report chapter.
-    func report() -> DiagnosticsChapter
+    nonisolated(nonsending) func report() async -> DiagnosticsChapter
 }
 
 public enum DiagnosticsReporter {
@@ -39,50 +39,52 @@ public enum DiagnosticsReporter {
         }
     }
 
-    /// The title that is used in the header of the web page of the report.
-    static var reportTitle: String = "\(Bundle.appName) - Diagnostics Report"
-
     /// Creates the report by making use of the given reporters.
     /// - Parameters:
     ///   - reporters: The reporters to use. Defaults to `DefaultReporter.allReporters`.
     ///   Use this parameter if you'd like to exclude certain reports.
     ///   - filters: The filters to use for the generated diagnostics. Should conform to the `DiagnosticsReportFilter` protocol.
     ///   - smartInsightsProvider: Provide any smart insights for the given `DiagnosticsChapter`.
-    public static func create(
+    ///   - filename: The filename to use for the report.
+    ///   - reportTitle: The title that is used in the header of the web page of the report. Defaults to `<App Name> - Diagnostics Report`.
+    /// - Returns: The generated report.
+    public nonisolated(nonsending) static func create(
         filename: String = "Diagnostics-Report.html",
         using reporters: [DiagnosticsReporting] = DefaultReporter.allReporters,
         filters: [DiagnosticsReportFilter.Type]? = nil,
-        smartInsightsProvider: SmartInsightsProviding? = nil
-    ) -> DiagnosticsReport {
+        smartInsightsProvider: SmartInsightsProviding? = nil,
+        reportTitle: String? = nil
+    ) async -> DiagnosticsReport {
         /// We should be able to parse Smart insights out of other chapters.
         /// For example: read out errors from the log chapter and create insights out of it.
         ///
         /// Therefore, we are generating insights on the go and add them to the Smart Insights later.
         var smartInsights: [SmartInsightProviding] = []
-
-        var reportChapters = reporters
-            .filter { ($0 is SmartInsightsReporter) == false }
-            .map { reporter -> DiagnosticsChapter in
-                var chapter = reporter.report()
-                if let filters, !filters.isEmpty {
-                    chapter.applyingFilters(filters)
-                }
-                if let smartInsightsProvider {
-                    let insights = smartInsightsProvider.smartInsights(for: chapter)
-                    smartInsights.append(contentsOf: insights)
-                }
-
-                return chapter
+        let reportTitle = reportTitle ?? "\(Bundle.appName) - Diagnostics Report"
+        
+        var reportChapters: [DiagnosticsChapter] = []
+        
+        for reporter in reporters where !(reporter is SmartInsightsReporter) {
+            var chapter = await reporter.report()
+            if let filters, !filters.isEmpty {
+                chapter.applyingFilters(filters)
             }
-
+            reportChapters.append(chapter)
+            
+            if let smartInsightsProvider {
+                let insights = smartInsightsProvider.smartInsights(for: chapter)
+                smartInsights.append(contentsOf: insights)
+            }
+        }
+        
         if let smartInsightsChapterIndex = reporters.firstIndex(where: { $0 is SmartInsightsReporter }) {
             var smartInsightsReporter = SmartInsightsReporter()
             smartInsightsReporter.insights.append(contentsOf: smartInsights)
-            let smartInsightsChapter = smartInsightsReporter.report()
+            let smartInsightsChapter = await smartInsightsReporter.report()
             reportChapters.insert(smartInsightsChapter, at: smartInsightsChapterIndex)
         }
 
-        let html = generateHTML(using: reportChapters)
+        let html = generateHTML(using: reportChapters, reportTitle: reportTitle)
         let data = html.data(using: .utf8)!
         return DiagnosticsReport(filename: filename, data: data)
     }
@@ -90,14 +92,14 @@ public enum DiagnosticsReporter {
 
 // MARK: - HTML Report Generation
 extension DiagnosticsReporter {
-    private static func generateHTML(using reportChapters: [DiagnosticsChapter]) -> HTML {
+    private static func generateHTML(using reportChapters: [DiagnosticsChapter], reportTitle: String) -> HTML {
         var html = "<html>"
         html += header()
         html += "<body>"
         html += "<main class=\"container\">"
 
         html += menu(using: reportChapters)
-        html += mainContent(using: reportChapters)
+        html += mainContent(using: reportChapters, reportTitle: reportTitle)
 
         html += "</main>"
         html += footer()
@@ -162,7 +164,7 @@ extension DiagnosticsReporter {
     }
     //  swiftlint:enable line_length
 
-    static func mainContent(using chapters: [DiagnosticsChapter]) -> HTML {
+    static func mainContent(using chapters: [DiagnosticsChapter], reportTitle: String) -> HTML {
         var html = "<div class=\"main-content\">"
         html += "<header><h1>\(reportTitle)</h1></header>"
         chapters.forEach { chapter in

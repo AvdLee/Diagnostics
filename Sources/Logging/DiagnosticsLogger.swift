@@ -18,10 +18,10 @@ import UIKit
 
 /// A Diagnostics Logger to log messages to which will end up in the Diagnostics Report if using the default `LogsReporter`.
 /// Will keep a `.txt` log in the documents directory with the latestlogs with a max size of 2 MB.
-public final class DiagnosticsLogger {
+public final class DiagnosticsLogger: Sendable {
     static let standard = DiagnosticsLogger()
 
-    private lazy var logFileLocation: URL = FileManager.default.documentsDirectory.appendingPathComponent("diagnostics_log.txt")
+    private static let logFileLocation: URL = FileManager.default.documentsDirectory.appendingPathComponent("diagnostics_log.txt")
 
     private let inputPipe = Pipe()
     private let outputPipe = Pipe()
@@ -33,36 +33,20 @@ public final class DiagnosticsLogger {
         target: .global(qos: .utility)
     )
 
-    private var logSize: ByteCountFormatter.Units.Bytes!
-    private let maximumSize: ByteCountFormatter.Units.Bytes = 2 * 1024 * 1024 // 2 MB
-    private let trimSize: ByteCountFormatter.Units.Bytes = 100 * 1024 // 100 KB
-    private let minimumRequiredDiskSpace: ByteCountFormatter.Units.Bytes = 500 * 1024 * 1024 // 500 MB
-    private var logLinesPassedSinceLastDiskCheck = 0
-
-    /// Makes sure we have enough disk space left for new logs, preventing a crash due to a lack of space.
-    /// Comes with a threshold to check for free disk space since iOS 16+ triggers system logs during space
-    /// checking that we handle as logs as well.
-    /// Not adding this threshold would mean ending up in an infinite loop on iOS 16 and up.
-    /// `logLinesPassedSinceLastDiskCheck` is thread safe since this method is only accessed from our serial queue.
-    private var canWriteNewLogs: Bool {
-        guard logLinesPassedSinceLastDiskCheck >= 5 else {
-            return true
-        }
-        defer { logLinesPassedSinceLastDiskCheck = 0 }
-        guard Device.freeDiskSpaceInBytes > minimumRequiredDiskSpace else {
-            return false
-        }
-        return true
-    }
-
+    private let logsWriter = LogsWriter(
+        logFileLocation: DiagnosticsLogger.logFileLocation,
+        maximumLogSize: 2 * 1024 * 1024 // 2 MB
+    )
     private var isRunningTests: Bool {
         return ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 
-    private lazy var metricsMonitor = MetricsMonitor()
+    private let metricsMonitor = MetricsMonitor()
 
     /// Whether the logger is setup and ready to use.
-    private var isSetup = false
+    private var isSetup: Bool {
+        inputPipe.fileHandleForReading.readabilityHandler != nil || isRunningTests
+    }
 
     /// Whether the logger is setup and ready to use.
     public static func isSetUp() -> Bool {
@@ -110,21 +94,17 @@ public final class DiagnosticsLogger {
 extension DiagnosticsLogger {
 
     private func setup() throws {
-        if !FileManager.default.fileExists(atPath: logFileLocation.path) {
+        if !FileManager.default.fileExists(atPath: DiagnosticsLogger.logFileLocation.path) {
             try FileManager.default
                 .createDirectory(atPath: FileManager.default.documentsDirectory.path, withIntermediateDirectories: true, attributes: nil)
-            guard FileManager.default.createFile(atPath: logFileLocation.path, contents: nil, attributes: nil) else {
+            guard FileManager.default.createFile(atPath: DiagnosticsLogger.logFileLocation.path, contents: nil, attributes: nil) else {
                 assertionFailure("Unable to create the log file")
                 return
             }
         }
 
-        let logFileHandle = try FileHandle(forWritingTo: logFileLocation)
-        logFileHandle.seekToEndOfFile()
-        logSize = Int64(logFileHandle.offsetInFile)
         setupPipe()
         metricsMonitor.startMonitoring()
-        isSetup = true
         startNewSession()
     }
 }
@@ -149,7 +129,7 @@ extension DiagnosticsLogger {
             var coordinateError: NSError?
             var dataError: Error?
             var logData: Data?
-            coordinator.coordinate(readingItemAt: logFileLocation, error: &coordinateError) { url in
+            coordinator.coordinate(readingItemAt: DiagnosticsLogger.logFileLocation, error: &coordinateError) { url in
                 do {
                     logData = try Data(contentsOf: url)
                 } catch {
@@ -169,8 +149,10 @@ extension DiagnosticsLogger {
 
     /// Removes the log file. Should only be used for testing purposes.
     func deleteLogs() throws {
-        guard FileManager.default.fileExists(atPath: logFileLocation.path) else { return }
-        try? FileManager.default.removeItem(atPath: logFileLocation.path)
+        queue.sync {
+            guard FileManager.default.fileExists(atPath: DiagnosticsLogger.logFileLocation.path) else { return }
+            try? FileManager.default.removeItem(atPath: DiagnosticsLogger.logFileLocation.path)
+        }
     }
 
     func log(_ loggable: Loggable) {
@@ -179,69 +161,15 @@ extension DiagnosticsLogger {
         }
 
         queue.async { [weak self] in
-            guard let self else { return }
-            let coordinator = NSFileCoordinator(filePresenter: nil)
-            var error: NSError?
-            coordinator.coordinate(writingItemAt: self.logFileLocation, error: &error) { [weak self] url in
-                do {
-                    guard let self, self.canWriteNewLogs else { return }
-
-                    guard let data = loggable.logData else {
-                        return assertionFailure("Missing file handle or invalid output logged")
-                    }
-
-                    let fileHandle = try FileHandle(forWritingTo: url)
-                    if #available(OSX 10.15.4, iOS 13.4, watchOS 6.0, tvOS 13.4, *) {
-                        defer {
-                            try? fileHandle.close()
-                        }
-                        try fileHandle.seekToEnd()
-                        try fileHandle.write(contentsOf: data)
-                    } else {
-                        self.legacyAppend(data, to: fileHandle)
-                    }
-
-                    self.logSize += Int64(data.count)
-                    self.trimLinesIfNecessary()
-                } catch {
-                    print("Writing data failed with error: \(error)")
-                }
-            }
-        }
-    }
-
-    private func legacyAppend(_ data: Data, to fileHandle: FileHandle) {
-        defer {
-            fileHandle.closeFile()
-        }
-        fileHandle.seekToEndOfFile()
-        fileHandle.write(data)
-    }
-
-    private func trimLinesIfNecessary() {
-        guard logSize > maximumSize else { return }
-
-        guard
-            var data = try? Data(contentsOf: self.logFileLocation, options: .mappedIfSafe),
-            !data.isEmpty else {
-            return assertionFailure("Trimming the current log file failed")
-        }
-
-        let trimmer = LogsTrimmer(numberOfLinesToTrim: 10)
-        trimmer.trim(data: &data)
-
-        logSize = Int64(data.count)
-
-        guard (try? data.write(to: logFileLocation, options: .atomic)) != nil else {
-            return assertionFailure("Could not write trimmed log to target file location: \(logFileLocation)")
+            self?.logsWriter.write(loggable)
         }
     }
 }
 
 // MARK: - System logs
-private extension DiagnosticsLogger {
+extension DiagnosticsLogger {
 
-    func setupPipe() {
+    private func setupPipe() {
         guard !isRunningTests else { return }
 
         inputPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
@@ -261,17 +189,12 @@ private extension DiagnosticsLogger {
     private func handleLoggedData(_ data: Data) {
         do {
             try ExceptionCatcher.catch { () -> Void in
-                autoreleasepool {
-                    outputPipe.fileHandleForWriting.write(data)
+                outputPipe.fileHandleForWriting.write(data)
 
-                    guard let string = String(data: data, encoding: .utf8) else {
-                        return assertionFailure("Invalid data is logged")
-                    }
-
-                    string.enumerateLines(invoking: { [weak self] line, _ in
-                        self?.log(SystemLog(line: line))
-                    })
-                }
+                let string = String(decoding: data, as: UTF8.self)
+                string.enumerateLines(invoking: { [weak self] line, _ in
+                    self?.log(SystemLog(line: line))
+                })
             }
         } catch {
             print("Exception was catched \(error)")

@@ -18,4 +18,8 @@ public struct SmartInsight: SmartInsightProviding {
         self.name = name
         self.result = result
     }
+    
+    public func generateResult() async -> InsightResult? {
+        result
+    }
 }

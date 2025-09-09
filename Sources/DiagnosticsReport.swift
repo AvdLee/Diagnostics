@@ -29,22 +29,30 @@ public struct DiagnosticsReport: Sendable {
 }
 
 public extension DiagnosticsReport {
-    /// This method can be used for debugging purposes to save the report to a `Diagnostics` folder on desktop.
-    func saveToDesktop() {
+    private var userPath: String {
         let simulatorPath = (NSSearchPathForDirectoriesInDomains(.desktopDirectory, .userDomainMask, true) as [String]).first!
         let simulatorPathComponents = URL(string: simulatorPath)!.pathComponents.prefix(3).filter { $0 != "/" }
         let userPath = simulatorPathComponents.joined(separator: "/")
-
-        #if os(iOS)
-            let folderPath = "/\(userPath)/Desktop/Diagnostics/"
-            try? FileManager.default.createDirectory(atPath: folderPath, withIntermediateDirectories: true, attributes: nil)
-            let filePath = folderPath + filename
-            save(to: filePath)
-        #elseif os(OSX)
-            let folderPath = "/\(userPath)/Desktop/"
-            saveUsingPanel(initialDirectoryPath: folderPath, filename: filename)
-        #endif
+        return userPath
     }
+    
+    /// This method can be used for debugging purposes to save the report to a `Diagnostics` folder on desktop.
+    #if os(iOS)
+    func saveToDesktop() {
+        let folderPath = "/\(userPath)/Desktop/Diagnostics/"
+        try? FileManager.default.createDirectory(atPath: folderPath, withIntermediateDirectories: true, attributes: nil)
+        let filePath = folderPath + filename
+        save(to: filePath)
+    }
+    #elseif os(OSX)
+    @MainActor
+    func saveToDesktop() {
+        Task { @MainActor in
+            let folderPath = "/\(userPath)/Desktop/"
+            await saveUsingPanel(initialDirectoryPath: folderPath, filename: filename)
+        }
+    }
+    #endif
 
     private func save(to filePath: String) {
         guard FileManager.default.createFile(
@@ -60,24 +68,24 @@ public extension DiagnosticsReport {
     }
 
 #if os(OSX)
-    private func saveUsingPanel(initialDirectoryPath: String, filename: String) {
+    @MainActor
+    private func saveUsingPanel(initialDirectoryPath: String, filename: String) async {
         let savePanel = NSSavePanel()
         savePanel.canCreateDirectories = true
         savePanel.showsTagField = false
         savePanel.directoryURL = URL(string: initialDirectoryPath)
-        savePanel.allowedFileTypes = ["html"]
+        savePanel.allowedContentTypes = [.html]
         savePanel.nameFieldStringValue = filename
         savePanel.title = "Save Diagnostics Report"
         savePanel.message = "Save the Diagnostics report to the chosen location."
         savePanel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.modalPanelWindow)))
-        savePanel.begin { result in
-            guard result == .OK, let targetURL = savePanel.url else {
-                print("Saving Diagnostics report cancelled or failed")
-                return
-            }
-            self.save(to: targetURL.path)
-            NSWorkspace.shared.activateFileViewerSelecting([targetURL])
+        let result = await savePanel.begin()
+        guard result == .OK, let targetURL = savePanel.url else {
+            print("Saving Diagnostics report cancelled or failed")
+            return
         }
+        self.save(to: targetURL.path)
+        NSWorkspace.shared.activateFileViewerSelecting([targetURL])
     }
 #endif
 }

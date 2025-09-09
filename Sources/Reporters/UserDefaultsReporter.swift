@@ -8,6 +8,9 @@
 
 import Foundation
 
+/// User Defaults is thread-safe, so it's fine to mark this retroactively as `Sendable`.
+extension UserDefaults: @unchecked @retroactive Sendable { }
+
 /// Generates a report from all the registered UserDefault keys.
 public final class UserDefaultsReporter: DiagnosticsReporting {
 
@@ -23,7 +26,7 @@ public final class UserDefaultsReporter: DiagnosticsReporting {
 
     public func report() -> DiagnosticsChapter {
         let userDefaultsDiagnostics = keys.reduce(into: [:]) { dictionary, key in
-            dictionary[key] = userDefaults.object(forKey: key)
+            dictionary[key] = "\(String(describing: userDefaults.object(forKey: key)))"
         }
 
         return DiagnosticsChapter(title: "UserDefaults", diagnostics: userDefaultsDiagnostics, formatter: Self.self)

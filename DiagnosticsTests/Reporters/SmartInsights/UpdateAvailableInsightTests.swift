@@ -19,18 +19,19 @@ final class UpdateAvailableInsightTests: XCTestCase {
         XCTAssertNil(UpdateAvailableInsight(bundleIdentifier: nil))
     }
 
-    func testReturningNilIfNoAppMetadataAvailable() {
+    func testReturningNilIfNoAppMetadataAvailable() async {
         let expectation = expectation(description: #function)
         func appMetadataCompletion() -> Result<AppMetadataResults, Error> {
             expectation.fulfill()
             return Result.failure(exampleError)
         }
         let insight = UpdateAvailableInsight(bundleIdentifier: sampleBundleIdentifier, appMetadataCompletion: appMetadataCompletion)
-        XCTAssertNil(insight)
-        waitForExpectations(timeout: 1)
+        let result = await insight?.generateResult()
+        XCTAssertNil(result)
+        await fulfillment(of: [expectation], timeout: 1)
     }
 
-    func testUserIsOnTheSameVersion() {
+    func testUserIsOnTheSameVersion() async {
         let expectation = expectation(description: #function)
         let appMetadata = AppMetadataResults(results: [.init(version: "1.0.0")])
         func appMetadataCompletion() -> Result<AppMetadataResults, Error> {
@@ -39,11 +40,12 @@ final class UpdateAvailableInsightTests: XCTestCase {
         }
 
         let insight = UpdateAvailableInsight(bundleIdentifier: sampleBundleIdentifier, currentVersion: "1.0.0", appMetadataCompletion: appMetadataCompletion)
-        XCTAssertEqual(insight?.result, .success(message: "The user is using the latest app version 1.0.0"))
-        waitForExpectations(timeout: 1)
+        let result = await insight?.generateResult()
+        XCTAssertEqual(result, .success(message: "The user is using the latest app version 1.0.0"))
+        await fulfillment(of: [expectation], timeout: 1)
     }
 
-    func testUserIsOnANewerVersion() {
+    func testUserIsOnANewerVersion() async {
         let expectation = expectation(description: #function)
         let appMetadata = AppMetadataResults(results: [.init(version: "1.0.0")])
         func appMetadataCompletion() -> Result<AppMetadataResults, Error> {
@@ -52,11 +54,12 @@ final class UpdateAvailableInsightTests: XCTestCase {
         }
 
         let insight = UpdateAvailableInsight(bundleIdentifier: sampleBundleIdentifier, currentVersion: "2.0.0", appMetadataCompletion: appMetadataCompletion)
-        XCTAssertEqual(insight?.result, .success(message: "The user is using a newer version 2.0.0"))
-        waitForExpectations(timeout: 1)
+        let result = await insight?.generateResult()
+        XCTAssertEqual(result, .success(message: "The user is using a newer version 2.0.0"))
+        await fulfillment(of: [expectation], timeout: 1)
     }
 
-    func testUserIsOnAnOlderVersion() {
+    func testUserIsOnAnOlderVersion() async {
         let expectation = expectation(description: #function)
         let appMetadata = AppMetadataResults(results: [.init(version: "2.0.0")])
         func appMetadataCompletion() -> Result<AppMetadataResults, Error> {
@@ -65,7 +68,8 @@ final class UpdateAvailableInsightTests: XCTestCase {
         }
 
         let insight = UpdateAvailableInsight(bundleIdentifier: sampleBundleIdentifier, currentVersion: "1.0.0", appMetadataCompletion: appMetadataCompletion)
-        XCTAssertEqual(insight?.result, .warn(message: "The user could update to 2.0.0"))
-        waitForExpectations(timeout: 1)
+        let result = await insight?.generateResult()
+        XCTAssertEqual(result, .warn(message: "The user could update to 2.0.0"))
+        await fulfillment(of: [expectation], timeout: 1)
     }
 }

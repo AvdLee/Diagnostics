@@ -1,11 +1,11 @@
 import Foundation
 import MetricKit
 
-enum LoggableCSSClass: String {
+enum LoggableCSSClass: String, Sendable {
     case debug, error, system
 }
 
-protocol Loggable {
+protocol Loggable: Sendable {
     /// The date of the log event. If set, it will be prepended to the log message in the right format.
     var date: Date? { get }
 
@@ -24,11 +24,11 @@ extension Loggable {
     var prefix: String? { nil }
     var cssClass: LoggableCSSClass? { nil }
 
-    var logData: Data? {
+    var logData: Data {
         if let cssClass {
-            return "<p class=\"\(cssClass)\">\(logMessage)</p>\n".data(using: .utf8)
+            Data("<p class=\"\(cssClass)\">\(logMessage)</p>\n".utf8)
         } else {
-            return "\(message)\n".data(using: .utf8)
+            Data("\(message)\n".utf8)
         }
     }
 
@@ -144,7 +144,7 @@ struct ExceptionLog: Loggable {
 }
 
 #if os(iOS)
-@available(iOS 14.0, *)
+extension MXDiagnosticPayload: @unchecked @retroactive Sendable {}
 extension MXDiagnosticPayload: Loggable {
     var message: String {
         """
@@ -158,7 +158,6 @@ extension MXDiagnosticPayload: Loggable {
     }
 }
 
-@available(iOS 14.0, *)
 extension MXDiagnosticPayload {
     var logDescription: String {
         var logs: [String] = []
@@ -167,7 +166,6 @@ extension MXDiagnosticPayload {
     }
 }
 
-@available(iOS 14.0, *)
 extension MXCrashDiagnostic {
     var logDescription: String {
         return """
@@ -183,7 +181,6 @@ extension MXCrashDiagnostic {
     }
 }
 
-@available(iOS 14.0, *)
 extension MXCallStackTree {
     var logDescription: String {
         let jsonData = jsonRepresentation()
