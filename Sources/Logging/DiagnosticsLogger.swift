@@ -21,7 +21,7 @@ import UIKit
 public final class DiagnosticsLogger: Sendable {
     static let standard = DiagnosticsLogger()
 
-    private static let logFileLocation: URL = FileManager.default.documentsDirectory.appendingPathComponent("diagnostics_log.txt")
+    private static let logFileLocation: URL = FileManager.default.applicationSupportDirectory.appendingPathComponent("diagnostics_log.txt")
 
     private let inputPipe = Pipe()
     private let outputPipe = Pipe()
@@ -96,7 +96,7 @@ extension DiagnosticsLogger {
     private func setup() throws {
         if !FileManager.default.fileExists(atPath: DiagnosticsLogger.logFileLocation.path) {
             try FileManager.default
-                .createDirectory(atPath: FileManager.default.documentsDirectory.path, withIntermediateDirectories: true, attributes: nil)
+                .createDirectory(atPath: FileManager.default.applicationSupportDirectory.path, withIntermediateDirectories: true, attributes: nil)
             guard FileManager.default.createFile(atPath: DiagnosticsLogger.logFileLocation.path, contents: nil, attributes: nil) else {
                 assertionFailure("Unable to create the log file")
                 return
@@ -203,8 +203,8 @@ extension DiagnosticsLogger {
 }
 
 private extension FileManager {
-    var documentsDirectory: URL {
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    var applicationSupportDirectory: URL {
+        let paths = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
         return paths[0]
     }
 

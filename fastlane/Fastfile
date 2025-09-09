@@ -51,7 +51,7 @@ lane :test_project do |options|
     scheme: scheme,
     testplan: options[:testplan],
     project: project_path,
-    destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=latest",
+    destination: "platform=macOS",
     fail_build: true,
     skip_slack: true,
     output_types: '',
