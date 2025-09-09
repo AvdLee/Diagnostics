@@ -8,12 +8,13 @@
 #if !os(macOS)
 
 import SwiftUI
-import Diagnostics
+public import Diagnostics
 import MessageUI
 
 struct ContentView_iOS: View {
     
     @State private var presentDiagnosticsSheet = false
+    @State private var report: DiagnosticsReport?
     
     var body: some View {
         Form {
@@ -21,16 +22,18 @@ struct ContentView_iOS: View {
                 performCrash()
             }
             Button("Send Diagnostics") {
-                #if targetEnvironment(simulator)
-                    /// For debugging purposes you can save the report to desktop when testing on the simulator.
-                    /// This allows you to iterate fast on your report.
-                    let report = DiagnosticsReportFactory.make()
-                    report.saveToDesktop()
-                #else
-                    presentDiagnosticsSheet = true
-                #endif
+                Task {
+                    let report = await DiagnosticsReportFactory.make()
+                    #if targetEnvironment(simulator)
+                        /// For debugging purposes you can save the report to desktop when testing on the simulator.
+                        /// This allows you to iterate fast on your report.
+                        report.saveToDesktop()
+                    #else
+                        self.report = report
+                    #endif
+                }
             }
-        }.diagnosticsReportSheet(isPresented: $presentDiagnosticsSheet)
+        }.diagnosticsReportSheet(report: $report)
     }
 }
 
@@ -38,12 +41,15 @@ struct ContentView_iOS: View {
     ContentView_iOS()
 }
 
+extension DiagnosticsReport: @retroactive Identifiable {
+    public var id: String { filename + String(data: data, encoding: .utf8)! }
+}
+
 extension View {
     @ViewBuilder
-    func diagnosticsReportSheet(isPresented: Binding<Bool>) -> some View {
-        let report = DiagnosticsReportFactory.make()
+    func diagnosticsReportSheet(report: Binding<DiagnosticsReport?>) -> some View {
         if MFMailComposeViewController.canSendMail() {
-            self.sheet(isPresented: isPresented) {
+            self.sheet(item: report) { report in
                 MailComposerViewController(
                     recipients: ["support@yourcompany.com"],
                     subject: "Diagnostics Report",
@@ -52,10 +58,10 @@ extension View {
                 )
             }
         } else {
-            self.sheet(isPresented: isPresented) {
+            self.sheet(item: report) { reportItem in
                 ShareSheet(items: [
-                    report.writeToTemporaryDirectory()
-                ], isPresented: isPresented)
+                    reportItem.writeToTemporaryDirectory()
+                ], report: report)
             }
         }
     }
@@ -70,21 +76,21 @@ extension DiagnosticsReport {
 }
 
 extension View {
-    func shareSheet(isPresented: Binding<Bool>, items: [Any]) -> some View {
+    func shareSheet(report: Binding<DiagnosticsReport?>, items: [Any]) -> some View {
         background(
-            ShareSheet(items: items, isPresented: isPresented)
+            ShareSheet(items: items, report: report)
         )
     }
 }
 
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
-    @Binding var isPresented: Bool
+    @Binding var report: DiagnosticsReport?
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
         controller.completionWithItemsHandler = { _, _, _, _ in
-            isPresented = false
+            report = nil
         }
         return controller
     }
@@ -122,7 +128,7 @@ struct MailComposerViewController: UIViewControllerRepresentable {
             self.parent = parent
         }
 
-        func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+        func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: (any Error)?) {
             parent.dismiss()
         }
     }

@@ -1,0 +1,52 @@
+name: PR Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature/*
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15 # macos-15 runners have Xcode 26 beta
+
+    env:
+      UPLOAD_XCRESULT_FILE: NO # Set to YES to upload the XCResult file for debugging.
+      DEBUG: NO # Set to YES to show raw xcode logs and disable parallel testing. Will also be enabled when ACTIONS_STEP_DEBUG == true, happening in GitHub Action Relaunches.
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1           # Only fetch the latest commit
+          submodules: false        # Only set to true if you need submodules
+      - uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Set up Ruby and install gems
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Select Xcode 26 Beta 7
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_26_beta_7.app"
+
+      - name: Show Xcode and Swift version
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Run Diagnostics Tests
+        if: ${{ always() }}
+        run: bundle exec fastlane test_diagnostics

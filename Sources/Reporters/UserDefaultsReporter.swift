@@ -25,8 +25,12 @@ public final class UserDefaultsReporter: DiagnosticsReporting {
     }
 
     public func report() -> DiagnosticsChapter {
-        let userDefaultsDiagnostics = keys.reduce(into: [:]) { dictionary, key in
-            dictionary[key] = "\(String(describing: userDefaults.object(forKey: key)))"
+        let userDefaultsDiagnostics: [String: String] = keys.reduce(into: [:]) { dictionary, key in
+            if let object = userDefaults.object(forKey: key) {
+                dictionary[key] = "\(String(describing: object))"
+            } else {
+                dictionary[key] = "<nil>"
+            }
         }
 
         return DiagnosticsChapter(title: "UserDefaults", diagnostics: userDefaultsDiagnostics, formatter: Self.self)

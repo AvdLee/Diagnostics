@@ -3,18 +3,14 @@
 </p>
 
 <p align="center">
-<img src="https://app.bitrise.io/app/93c4448b37e42816.svg?token=iHe2fyIwNXWEIh3BshG8oQ"/>
-<img src="https://img.shields.io/cocoapods/v/Diagnostics.svg?style=flat"/>
-<img src="https://img.shields.io/cocoapods/l/Diagnostics.svg?style=flat"/>
-<img src="https://img.shields.io/cocoapods/p/Diagnostics.svg?style=flat"/>
-<img src="https://img.shields.io/badge/language-swift5.1-f48041.svg?style=flat"/>
+<img src="https://img.shields.io/badge/language-swift6.0-f48041.svg?style=flat"/>
 <img src="https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat"/>
 <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat"/>
 </p>
 
 | Example mail composer | Example Report |
 | --- | --- |
-| ![](Assets/example_composed_email.png) | ![](Assets/example_report.png) |
+| ![](Assets/example_composed_email.jpeg) | ![](Assets/example_report.png) |
 
 Diagnostics is a library written in Swift which makes it really easy to share Diagnostics Reports to your support team.
 
