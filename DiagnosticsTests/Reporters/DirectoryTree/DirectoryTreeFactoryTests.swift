@@ -26,11 +26,11 @@ final class DirectoryTreeFactoryTests: XCTestCase {
         └── treetest
             +-- Library
             |   +-- Preferences
-            |   |   └── group.com.wetransfer.app.plist
+            |   |   └── group.com.swiftlee.app.plist
             |   └── Caches
             |       └── com.apple.nsurlsessiond
             |           └── Downloads
-            |               └── com.wetransfer
+            |               └── com.swiftlee
             +-- Coyote.sqlite
             └── thumbnails
                 +-- 856F92AC-BB2E-4CDB-AC07-D911F98D7586.png
@@ -112,12 +112,12 @@ final class DirectoryTreeFactoryTests: XCTestCase {
             ]),
             .directory("", "Library", [
                 .directory("", "Preferences", [
-                    .file("", "group.com.wetransfer.app.plist")
+                    .file("", "group.com.swiftlee.app.plist")
                 ]),
                 .directory("", "Caches", [
                     .directory("", "com.apple.nsurlsessiond", [
                         .directory("", "Downloads", [
-                            .file("", "com.wetransfer")
+                            .file("", "com.swiftlee")
                         ])
                     ])
                 ])

@@ -27,7 +27,7 @@ public final class DiagnosticsLogger: Sendable {
     private let outputPipe = Pipe()
 
     private let queue = DispatchQueue(
-        label: "com.wetransfer.diagnostics.logger",
+        label: "com.swiftlee.diagnostics.logger",
         qos: .utility,
         autoreleaseFrequency: .workItem,
         target: .global(qos: .utility)

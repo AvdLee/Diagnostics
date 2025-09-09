@@ -13,7 +13,7 @@ import Combine
 final class UpdateAvailableInsightTests: XCTestCase {
 
     let exampleError = NSError(domain: UUID().uuidString, code: -1, userInfo: nil)
-    let sampleBundleIdentifier = "com.wetransfer.example.app"
+    let sampleBundleIdentifier = "com.swiftlee.example.app"
 
     func testReturningNilIfNoBundleIdentifier() {
         XCTAssertNil(UpdateAvailableInsight(bundleIdentifier: nil))
