@@ -70,26 +70,29 @@ import Diagnostics
 class ViewController: UIViewController {
 
     @IBAction func sendDiagnostics(_ sender: UIButton) {
-        /// Create the report.
-        let report = DiagnosticsReporter.create()
+        Task { @MainActor in
+            /// Create the report.
+            let report = await DiagnosticsReporter.create()
 
-        guard MFMailComposeViewController.canSendMail() else {
-            /// For debugging purposes you can save the report to desktop when testing on the simulator.
-            /// This allows you to iterate fast on your report.
-            report.saveToDesktop()
-            return
+            guard MFMailComposeViewController.canSendMail() else {
+                /// For debugging purposes you can save the report to desktop when testing on the simulator.
+                /// This allows you to iterate fast on your report.
+                report.saveToDesktop()
+                return
+            }
+
+            let mail = MFMailComposeViewController()
+            mail.mailComposeDelegate = self
+            mail.setToRecipients(["support@yourcompany.com"])
+            mail.setSubject("Diagnostics Report")
+            mail.setMessageBody("An issue in the app is making me crazy, help!", isHTML: false)
+
+            /// Add the Diagnostics Report as an attachment.
+            mail.addDiagnosticReport(report)
+
+            present(mail, animated: true)
         }
-
-        let mail = MFMailComposeViewController()
-        mail.mailComposeDelegate = self
-        mail.setToRecipients(["support@yourcompany.com"])
-        mail.setSubject("Diagnostics Report")
-        mail.setMessageBody("An issue in the app is making me crazy, help!", isHTML: false)
-
-        /// Add the Diagnostics Report as an attachment.
-        mail.addDiagnosticReport(report)
-
-        present(mail, animated: true)
+        
     }
 
 }
@@ -136,7 +139,7 @@ let userDefaultsReporter = UserDefaultsReporter(
     keys: ["key_1"]
 )
 
-let diagnosticsReport = DiagnosticsReporter.create(using: [userDefaultsReporter])
+let diagnosticsReport = await DiagnosticsReporter.create(using: [userDefaultsReporter])
 ```
 
 ### Filtering out sensitive data
@@ -149,7 +152,7 @@ struct DiagnosticsDictionaryFilter: DiagnosticsReportFilter {
 
     // This demonstrates how a filter can be used to filter out sensible data.
     static func filter(_ diagnostics: Diagnostics) -> Diagnostics {
-        guard let dictionary = diagnostics as? [String: Any] else { return diagnostics }
+        guard let dictionary = diagnostics as? [String: String] else { return diagnostics }
         return dictionary.filter { keyValue -> Bool in
             if keyValue.key == "App Display Name" {
                 // Filter out the key with the value "App Display Name"
@@ -167,7 +170,7 @@ struct DiagnosticsDictionaryFilter: DiagnosticsReportFilter {
 Which can be used by passing in the filter into the `create(..)` method:
 
 ```swift
-let report = DiagnosticsReporter.create(using: reporters, filters: [DiagnosticsDictionaryFilter.self])
+let report = await DiagnosticsReporter.create(using: reporters, filters: [DiagnosticsDictionaryFilter.self])
 ```
 
 ### Adding your own custom logs
@@ -251,7 +254,7 @@ You can then add this report to the creation method:
 ```swift
 var reporters = DiagnosticsReporter.DefaultReporter.allReporters
 reporters.insert(CustomReporter.self, at: 1)
-let report = DiagnosticsReporter.create(using: reporters)
+let report = await DiagnosticsReporter.create(using: reporters)
 ```
 
 ## Smart Insights
