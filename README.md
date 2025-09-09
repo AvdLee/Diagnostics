@@ -208,11 +208,11 @@ It's possible to add a directory tree report for a given set of URL, resulting i
     +-- Okapi.sqlite
     +-- Library
     |   +-- Preferences
-    |   |   └── group.com.wetransfer.app.plist
+    |   |   └── group.com.swiftlee.app.plist
     |   └── Caches
     |       └── com.apple.nsurlsessiond
     |           └── Downloads
-    |               └── com.wetransfer
+    |               └── com.swiftlee
     +-- Coyote.sqlite-shm
     +-- Coyote.sqlite
     +-- Coyote.sqlite-wal
@@ -321,7 +321,7 @@ let package = Package(
        .macOS(.v10_15)
     ],
     dependencies: [
-        .package(url: "https://github.com/WeTransfer/Diagnostics.git", .upToNextMajor(from: "1.8.0"))
+        .package(url: "https://github.com/AvdLee/Diagnostics.git", .upToNextMajor(from: "6.0.0"))
     ],
     targets: [
         .target(
@@ -336,7 +336,7 @@ let package = Package(
 
 #### Xcode
 
-To add Diagnostics as a [dependency](https://developer.apple.com/documentation/xcode/adding_package_dependencies_to_your_app) to your Xcode project, select *File > Swift Packages > Add Package Dependency* and enter the repository URL: `https://github.com/WeTransfer/Diagnostics.git`.
+To add Diagnostics as a [dependency](https://developer.apple.com/documentation/xcode/adding_package_dependencies_to_your_app) to your Xcode project, select *File > Swift Packages > Add Package Dependency* and enter the repository URL: `https://github.com/AvdLee/Diagnostics.git`.
 
 ### Carthage
 
@@ -352,7 +352,7 @@ $ brew install carthage
 To integrate Diagnostics into your Xcode project using Carthage, specify it in your `Cartfile`:
 
 ```ogdl
-github "WeTransfer/Diagnostics" ~> 1.00
+github "AvdLee/Diagnostics" ~> 6.00
 ```
 
 Run `carthage update` to build the framework and drag the built `Diagnostics.framework` into your Xcode project.
@@ -372,7 +372,7 @@ If you prefer not to use any of the aforementioned dependency managers, you can 
 - Add Diagnostics as a git [submodule](http://git-scm.com/docs/git-submodule) by running the following command:
 
   ```bash
-  $ git submodule add https://github.com/WeTransfer/Diagnostics.git
+  $ git submodule add https://github.com/AvdLee/Diagnostics.git
   ```
 
 - Open the new `Diagnostics` folder, and drag the `Diagnostics` folder into the Project Navigator of your application's Xcode project. This will add the SPM package as a local package.
@@ -391,10 +391,10 @@ If you prefer not to use any of the aforementioned dependency managers, you can 
 
 ## Release Notes
 
-See [CHANGELOG.md](https://github.com/WeTransfer/Diagnostics/blob/master/Changelog.md) for a list of changes.
+See [CHANGELOG.md](https://github.com/AvdLee/Diagnostics/blob/main/Changelog.md) for a list of changes.
 
 ## Authors
-This library is created as part of the [WeTransfer](https://www.wetransfer.com) Hackathon. Process has been reported on [Twitter](https://twitter.com/twannl/status/1201474263200550917?s=20). 
+This library was originally created by Antoine van der Lee as part of a WeTransfer hackathon. Process has been reported on [Twitter](https://twitter.com/twannl/status/1201474263200550917?s=20). 
 
 Thanks to:
 
