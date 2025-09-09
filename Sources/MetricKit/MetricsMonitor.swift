@@ -9,13 +9,11 @@ import Foundation
 import MetricKit
 
 /// Monitors payloads delivered by MetricKit and logs valueable information, including crashes.
-final class MetricsMonitor: NSObject {
+final class MetricsMonitor: NSObject, Sendable {
 
     func startMonitoring() {
         #if os(iOS)
-            if #available(iOS 14, *) {
-                MXMetricManager.shared.add(self)
-            }
+        MXMetricManager.shared.add(self)
         #endif
 
         NSSetUncaughtExceptionHandler { exception in
@@ -31,12 +29,10 @@ final class MetricsMonitor: NSObject {
 
 #if os(iOS)
 extension MetricsMonitor: MXMetricManagerSubscriber {
-    @available(iOS 13.0, *)
     func didReceive(_ payloads: [MXMetricPayload]) {
         // We don't do anything with metrics yet.
     }
 
-    @available(iOS 14.0, *)
     func didReceive(_ payloads: [MXDiagnosticPayload]) {
         guard let payload = payloads.last else {
             // We only use the last payload to prevent duplicate logging as much as possible.

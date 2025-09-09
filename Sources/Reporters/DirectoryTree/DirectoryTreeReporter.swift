@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct Directory {
+public struct Directory: Sendable {
     let url: URL
     let customisedName: String?
     let maxDepth: Int

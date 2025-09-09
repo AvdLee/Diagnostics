@@ -9,6 +9,7 @@
 import Foundation
 #if os(macOS)
 import AppKit
+import SystemConfiguration
 #else
 import UIKit
 #endif
@@ -16,18 +17,20 @@ import UIKit
 enum Device {
     static var systemName: String {
         #if os(macOS)
-        return ProcessInfo().hostName
+        return SCDynamicStoreCopyLocalHostName(nil) as String? ?? "Unknown"
+        #elseif os(iOS)
+        return "iOS"
+        #elseif os(tvOS)
+        return "tvOS"
+        #elseif os(watchOS)
+        return "watchOS"
         #else
-        return UIDevice.current.systemName
+        return "Unknown"
         #endif
     }
 
     static var systemVersion: String {
-        #if os(macOS)
-        return ProcessInfo().operatingSystemVersionString
-        #else
-        return UIDevice.current.systemVersion
-        #endif
+        ProcessInfo().operatingSystemVersionString
     }
 
     static var freeDiskSpace: ByteCountFormatter.Units.GigaBytes {

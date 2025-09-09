@@ -7,31 +7,24 @@
 
 import Foundation
 
-struct LogsTrimmer {
+struct LogsTrimmer: Sendable {
     let numberOfLinesToTrim: Int
 
+    private static let regex: NSRegularExpression = {
+        /// Any line that starts with `<p class=` and ends with `</p>`.
+        /// This basically matches any log line that comes with a CSS class.
+        let pattern = "<p class=\".*?\">.*?</p>"
+        return try! NSRegularExpression(pattern: pattern)
+    }()
+
     func trim(data: inout Data) {
-        guard let logs = String(data: data, encoding: .utf8) else {
-            return
-        }
+        var logs = String(decoding: data, as: UTF8.self)
+        let nsLogs = logs as NSString
+        let matches = LogsTrimmer.regex
+            .matches(in: logs, range: NSRange(location: 0, length: nsLogs.length))
 
-        // Define the regular expression pattern
-        let pattern = "<p class=\"system\"><span class=\"log-date\">(.*?)</span></p>"
-
-        // Create a regular expression object
-        guard let regex = try? NSRegularExpression(pattern: pattern) else {
-            return
-        }
-
-        // Find all matches in the input string
-        let matches = regex
-            .matches(
-                in: logs,
-                range: NSRange(location: 0, length: logs.utf16.count)
-            )
-            .suffix(numberOfLinesToTrim)
-
-        guard let firstMatch = matches.first, let lastMatch = matches.last else {
+        let linesToRemove = matches.prefix(numberOfLinesToTrim)
+        guard let firstMatch = linesToRemove.first, let lastMatch = linesToRemove.last else {
             return
         }
 
@@ -39,11 +32,8 @@ struct LogsTrimmer {
             location: firstMatch.range.location,
             length: lastMatch.range.upperBound - firstMatch.range.location
         )
-        guard let range = Range(range, in: logs) else {
-            return
-        }
 
-        let trimmedLogs = logs.replacingCharacters(in: range, with: "")
-        data = Data(trimmedLogs.utf8)
+        logs = nsLogs.replacingCharacters(in: range, with: "")
+        data = Data(logs.utf8)
     }
 }

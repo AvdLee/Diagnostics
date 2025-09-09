@@ -22,12 +22,12 @@ final class DiagnosticsReporterTests: XCTestCase {
     }
 
     /// It should correctly generate HTML from the reporters.
-    func testHTMLGeneration() {
+    func testHTMLGeneration() async throws {
         let diagnosticsChapter = DiagnosticsChapter(title: UUID().uuidString, diagnostics: UUID().uuidString)
         var reporter = MockedReporter()
         reporter.diagnosticsChapter = diagnosticsChapter
         let reporters = [reporter]
-        let report = DiagnosticsReporter.create(using: reporters)
+        let report = await DiagnosticsReporter.create(using: reporters)
         let html = String(data: report.data, encoding: .utf8)!
 
         XCTAssertTrue(html.contains("<h3>\(diagnosticsChapter.title)</h3>"))
@@ -35,8 +35,8 @@ final class DiagnosticsReporterTests: XCTestCase {
     }
 
     /// It should create a chapter for each reporter.
-    func testReportingChapters() {
-        let report = DiagnosticsReporter.create()
+    func testReportingChapters() async throws {
+        let report = await DiagnosticsReporter.create()
         let html = String(data: report.data, encoding: .utf8)!
         let expectedChaptersCount = DiagnosticsReporter.DefaultReporter.allCases.count
         let chaptersCount = html.components(separatedBy: "<div class=\"chapter\"").count - 1
@@ -44,45 +44,45 @@ final class DiagnosticsReporterTests: XCTestCase {
     }
 
     /// It should filter using passed filters.
-    func testFilters() {
+    func testFilters() async throws {
         let keyToFilter = UUID().uuidString
         let mockedReport = MockedReport(diagnostics: [keyToFilter: UUID().uuidString])
-        let report = DiagnosticsReporter.create(using: [mockedReport], filters: [MockedFilter.self])
+        let report = await DiagnosticsReporter.create(using: [mockedReport], filters: [MockedFilter.self])
         let html = String(data: report.data, encoding: .utf8)!
         XCTAssertFalse(html.contains(keyToFilter))
         XCTAssertTrue(html.contains("FILTERED"))
     }
 
-    func testWithoutProvidingSmartInsightsProvider() {
+    func testWithoutProvidingSmartInsightsProvider() async throws {
         let mockedReport = MockedReport(diagnostics: ["key": UUID().uuidString])
-        let report = DiagnosticsReporter.create(using: [mockedReport, SmartInsightsReporter()], filters: [MockedFilter.self], smartInsightsProvider: nil)
+        let report = await DiagnosticsReporter.create(using: [mockedReport, SmartInsightsReporter()], filters: [MockedFilter.self], smartInsightsProvider: nil)
         let html = String(data: report.data, encoding: .utf8)!
         XCTAssertTrue(html.contains("Smart Insights"), "Default insights should still be added")
     }
 
-    func testWithSmartInsightsProviderReturningNoExtraInsights() {
+    func testWithSmartInsightsProviderReturningNoExtraInsights() async throws {
         let mockedReport = MockedReport(diagnostics: ["key": UUID().uuidString])
-        let report = DiagnosticsReporter.create(using: [mockedReport, SmartInsightsReporter()], filters: [MockedFilter.self], smartInsightsProvider: MockedInsightsProvider(insightToReturn: nil))
+        let report = await DiagnosticsReporter.create(using: [mockedReport, SmartInsightsReporter()], filters: [MockedFilter.self], smartInsightsProvider: MockedInsightsProvider(insightToReturn: nil))
         let html = String(data: report.data, encoding: .utf8)!
         XCTAssertTrue(html.contains("Smart Insights"), "Default insights should still be added")
     }
 
-    func testWithSmartInsightsProviderReturningExtraInsights() {
+    func testWithSmartInsightsProviderReturningExtraInsights() async throws {
         let mockedReport = MockedReport(diagnostics: ["key": UUID().uuidString])
         let insightToReturn = SmartInsight(name: UUID().uuidString, result: .success(message: UUID().uuidString))
-        let report = DiagnosticsReporter.create(using: [mockedReport, SmartInsightsReporter()], filters: [MockedFilter.self], smartInsightsProvider: MockedInsightsProvider(insightToReturn: insightToReturn))
+        let report = await DiagnosticsReporter.create(using: [mockedReport, SmartInsightsReporter()], filters: [MockedFilter.self], smartInsightsProvider: MockedInsightsProvider(insightToReturn: insightToReturn))
         let html = String(data: report.data, encoding: .utf8)!
         XCTAssertTrue(html.contains(insightToReturn.name))
         XCTAssertTrue(html.contains(insightToReturn.result.message))
     }
 
     /// It should correctly generate the header.
-    func testHeaderGeneration() {
-        let report = DiagnosticsReporter.create(using: [])
+    func testHeaderGeneration() async throws {
+        let report = await DiagnosticsReporter.create(using: [])
         let html = String(data: report.data, encoding: .utf8)!
 
         XCTAssertTrue(html.contains("<head>"))
-        XCTAssertTrue(html.contains("<title>\(DiagnosticsReporter.reportTitle)</title>"))
+        XCTAssertTrue(html.contains("<title>xctest - Diagnostics Report</title>"))
         XCTAssertTrue(html.contains(DiagnosticsReporter.style()))
         XCTAssertTrue(html.contains("</head>"))
     }

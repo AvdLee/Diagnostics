@@ -10,7 +10,7 @@ import Diagnostics
 import Foundation
 
 struct SmartInsightsProvider: SmartInsightsProviding {
-    func smartInsights(for chapter: DiagnosticsChapter) -> [SmartInsightProviding] {
+    func smartInsights(for chapter: DiagnosticsChapter) -> [any SmartInsightProviding] {
         guard let html = chapter.diagnostics as? HTML else { return [] }
         if html.errorLogs.contains(where: { $0.contains("AppDelegate.ExampleLocalizedError") }) {
             return [

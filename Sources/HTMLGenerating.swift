@@ -14,11 +14,11 @@ public protocol HTMLGenerating: Sendable {
     func html() -> HTML
 }
 
-public protocol HTMLFormatting {
+public protocol HTMLFormatting: Sendable {
     static func format(_ diagnostics: Diagnostics) -> HTML
 }
 
-extension Dictionary: HTMLGenerating where Key == String {
+extension Dictionary: HTMLGenerating where Key == String, Value == String {
     public func html() -> HTML {
         var html = "<table>"
 

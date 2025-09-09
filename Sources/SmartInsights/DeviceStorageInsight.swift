@@ -28,4 +28,8 @@ struct DeviceStorageInsight: SmartInsightProviding {
             result = .success(message: "The user has enough storage \(storageStatus)")
         }
     }
+    
+    func generateResult() async -> InsightResult? {
+        result
+    }
 }

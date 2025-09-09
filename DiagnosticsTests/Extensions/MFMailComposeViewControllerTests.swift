@@ -14,6 +14,7 @@ import MessageUI
 final class MFMailComposeViewControllerTests: XCTestCase {
 
     /// It should be able to add a report as an attachment.
+    @MainActor
     func testAttachmentAdding() {
         let expectedData = Data()
         let report = DiagnosticsReport(filename: UUID().uuidString, data: expectedData)

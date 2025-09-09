@@ -1,13 +1,13 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(name: "Diagnostics",
                       platforms: [
-                        .macOS(.v10_15),
-                        .iOS(.v12),
-                        .tvOS(.v12),
+                        .macOS(.v13),
+                        .iOS(.v14),
+                        .tvOS(.v14),
                         .watchOS(.v6),
                         .visionOS(.v1)],
                       products: [
@@ -25,7 +25,9 @@ let package = Package(name: "Diagnostics",
                                 .process("style.css"),
                                 .process("functions.js"),
                                 .process("PrivacyInfo.xcprivacy")
+                            ],
+                            swiftSettings: [
+                                .enableExperimentalFeature("StrictConcurrency")
                             ]),
                         .testTarget(name: "DiagnosticsTests", dependencies: ["Diagnostics"], path: "DiagnosticsTests")
-                        ],
-                      swiftLanguageVersions: [.v5])
+                        ])

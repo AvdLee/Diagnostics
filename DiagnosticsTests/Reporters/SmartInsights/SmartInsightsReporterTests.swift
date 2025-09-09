@@ -11,15 +11,15 @@ import XCTest
 
 final class SmartInsightsReporterTests: XCTestCase {
 
-    func testSmartInsightsChapter() throws {
+    func testSmartInsightsChapter() async throws {
         let reporter = SmartInsightsReporter()
-        let chapter = reporter.report()
+        let chapter = await reporter.report()
         XCTAssertEqual(chapter.title, "Smart Insights")
         let insightsDictionary = try XCTUnwrap(chapter.diagnostics as? [String: String])
         XCTAssertFalse(insightsDictionary.isEmpty)
     }
 
-    func testRemovingDuplicateInsights() throws {
+    func testRemovingDuplicateInsights() async throws {
         var reporter = SmartInsightsReporter()
         let insight = SmartInsight(name: UUID().uuidString, result: .success(message: UUID().uuidString))
 
@@ -28,7 +28,7 @@ final class SmartInsightsReporterTests: XCTestCase {
 
         reporter.insights.append(contentsOf: [insight, insight, insight])
 
-        let chapter = reporter.report()
+        let chapter = await reporter.report()
         XCTAssertEqual(chapter.title, "Smart Insights")
         let insightsDictionary = try XCTUnwrap(chapter.diagnostics as? [String: String])
         XCTAssertEqual(insightsDictionary.count, 1, "It should only have one of the custom insights")
