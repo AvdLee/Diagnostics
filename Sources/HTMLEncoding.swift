@@ -3,7 +3,7 @@
 //  Diagnostics
 //
 //  Created by David Steppenbeck on 2020/02/26.
-//  Copyright © 2020 WeTransfer. All rights reserved.
+//  Copyright © 2020 Antoine van der Lee. All rights reserved.
 //
 
 import Foundation
