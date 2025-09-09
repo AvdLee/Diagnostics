@@ -32,6 +32,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
+      - name: Set up Ruby and install gems
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
       - name: Show Xcode and Swift version
         run: |
           xcodebuild -version
