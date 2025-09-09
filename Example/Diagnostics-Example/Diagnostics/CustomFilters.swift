@@ -13,7 +13,7 @@ struct DiagnosticsDictionaryFilter: DiagnosticsReportFilter {
 
     // This demonstrates how a filter can be used to filter out sensible data.
     static func filter(_ diagnostics: any Diagnostics) -> any Diagnostics {
-        guard let dictionary = diagnostics as? [String: Any] else { return diagnostics }
+        guard let dictionary = diagnostics as? [String: String] else { return diagnostics }
         return dictionary.filter { keyValue -> Bool in
             if keyValue.key == "App Display Name" {
                 // Filter out the key with the value "App Display Name"

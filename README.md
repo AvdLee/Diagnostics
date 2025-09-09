@@ -10,7 +10,7 @@
 
 | Example mail composer | Example Report |
 | --- | --- |
-| ![](Assets/example_composed_email.png) | ![](Assets/example_report.png) |
+| ![](Assets/example_composed_email.jpeg) | ![](Assets/example_report.png) |
 
 Diagnostics is a library written in Swift which makes it really easy to share Diagnostics Reports to your support team.
 

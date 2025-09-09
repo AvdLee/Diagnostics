@@ -9,7 +9,7 @@ import Diagnostics
 import Foundation
 
 struct DiagnosticsReportFactory {
-    static func make() -> DiagnosticsReport {
+    static func make() async -> DiagnosticsReport {
         /// Create the report.
         var reporters = DiagnosticsReporter.DefaultReporter.allReporters
         reporters.insert(CustomReporter(), at: 1)
@@ -22,7 +22,7 @@ struct DiagnosticsReportFactory {
         )
         reporters.insert(directoryTreesReporter, at: 2)
 
-        let report = DiagnosticsReporter.create(
+        let report = await DiagnosticsReporter.create(
             using: reporters,
             filters: [
                 DiagnosticsDictionaryFilter.self,
