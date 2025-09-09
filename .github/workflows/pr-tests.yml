@@ -38,6 +38,9 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
+      - name: Select Xcode 26 Beta 7
+        run: sudo xcode-select -s "/Applications/Xcode_26_beta_7.app/Contents/Developer"
+
       - name: Show Xcode and Swift version
         run: |
           xcodebuild -version
