@@ -3,7 +3,7 @@
 //  Diagnostics-Example
 //
 //  Created by Antoine van der Lee on 04/12/2019.
-//  Copyright © 2019 WeTransfer. All rights reserved.
+//  Copyright © 2019 Antoine van der Lee. All rights reserved.
 //
 
 import Diagnostics

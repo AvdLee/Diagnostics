@@ -3,7 +3,7 @@
 //  DiagnosticsTests
 //
 //  Created by David Steppenbeck on 2020/03/16.
-//  Copyright © 2020 WeTransfer. All rights reserved.
+//  Copyright © 2020 Antoine van der Lee. All rights reserved.
 //
 
 import XCTest

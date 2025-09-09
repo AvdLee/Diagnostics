@@ -3,7 +3,7 @@
 //  Diagnostics
 //
 //  Created by Antoine van der Lee on 02/12/2019.
-//  Copyright © 2019 WeTransfer. All rights reserved.
+//  Copyright © 2019 Antoine van der Lee. All rights reserved.
 //
 
 import ExceptionCatcher
@@ -27,7 +27,7 @@ public final class DiagnosticsLogger: Sendable {
     private let outputPipe = Pipe()
 
     private let queue = DispatchQueue(
-        label: "com.wetransfer.diagnostics.logger",
+        label: "com.swiftlee.diagnostics.logger",
         qos: .utility,
         autoreleaseFrequency: .workItem,
         target: .global(qos: .utility)

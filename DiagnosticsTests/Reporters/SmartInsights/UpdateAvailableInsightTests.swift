@@ -3,7 +3,7 @@
 //  Diagnostics
 //
 //  Created by Antoine van der Lee on 10/02/2022.
-//  Copyright © 2019 WeTransfer. All rights reserved.
+//  Copyright © 2019 Antoine van der Lee. All rights reserved.
 //
 
 import XCTest
@@ -13,7 +13,7 @@ import Combine
 final class UpdateAvailableInsightTests: XCTestCase {
 
     let exampleError = NSError(domain: UUID().uuidString, code: -1, userInfo: nil)
-    let sampleBundleIdentifier = "com.wetransfer.example.app"
+    let sampleBundleIdentifier = "com.swiftlee.example.app"
 
     func testReturningNilIfNoBundleIdentifier() {
         XCTAssertNil(UpdateAvailableInsight(bundleIdentifier: nil))
