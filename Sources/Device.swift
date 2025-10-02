@@ -50,6 +50,16 @@ enum Device {
         return Int64(space)
     }
 
+    #if os(tvOS)
+    static var freeDiskSpaceInBytes: ByteCountFormatter.Units.Bytes {
+        guard let space = try? URL(fileURLWithPath: NSHomeDirectory() as String)
+            .resourceValues(forKeys: [URLResourceKey.volumeAvailableCapacityKey])
+            .volumeAvailableCapacity else {
+            return 0
+        }
+        return ByteCountFormatter.Units.Bytes(space)
+    }
+    #else
     static var freeDiskSpaceInBytes: ByteCountFormatter.Units.Bytes {
         guard let space = try? URL(fileURLWithPath: NSHomeDirectory() as String)
             .resourceValues(forKeys: [URLResourceKey.volumeAvailableCapacityForOpportunisticUsageKey])
@@ -58,4 +68,5 @@ enum Device {
         }
         return space
     }
+    #endif
 }
