@@ -33,6 +33,12 @@ struct DirectoryTreeFactory {
     /// The file manager to use for operations.
     var fileManager: FileManager = .default
 
+    /// The extraction method to use.
+    var nameExtraction: Directory.NameExtraction = .localized
+
+    /// Closure to determine if a directory's contents should be skipped.
+    var skipDirectoryContents: @Sendable (_ path: String) -> Bool = { _ in false }
+
     func make() throws -> DirectoryTreeNode {
         guard let rootNode = try nodeFrom(path: path, depth: 0) else {
             throw Error.rootNodeCreationFailed
@@ -43,10 +49,23 @@ struct DirectoryTreeFactory {
     private func nodeFrom(path: String, depth: Int) throws -> DirectoryTreeNode? {
         guard depth < maxDepth else { return nil }
 
-        let name = fileManager.displayName(atPath: path)
+        let name = switch nameExtraction {
+        case .localized: fileManager.displayName(atPath: path)
+        case .raw: (path as NSString).lastPathComponent
+        }
 
         guard includeHiddenFiles || !name.starts(with: ".") else {
             return nil
+        }
+
+        // Skip expensive operations for directories we don't want to traverse (especially beneficial on iCloud folders).
+        if isDirectory(atPath: path) && skipDirectoryContents(path) {
+            if isSymbolicLink(atPath: path) {
+                guard includeSymbolicLinks else { return nil }
+                return .symbolLink(path, name)
+            } else {
+                return .directory(path, name, [])
+            }
         }
 
         let type = try fileType(atPath: path)
@@ -82,5 +101,20 @@ struct DirectoryTreeFactory {
             throw Error.invalidFileType
         }
         return FileAttributeType(rawValue: type)
+    }
+
+    /// Checks if a path is a symbolic link
+    private func isSymbolicLink(atPath path: String) -> Bool {
+        (try? fileManager.destinationOfSymbolicLink(atPath: path)) != nil
+    }
+
+    /// Checks if a path points to a directory. Uses fileExists which is faster than checking attributes, especially on iCloud folders.
+    private func isDirectory(atPath path: String) -> Bool {
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue {
+            return true
+        }
+
+        return false
     }
 }

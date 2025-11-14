@@ -8,6 +8,14 @@
 import Foundation
 
 public struct Directory: Sendable {
+    /// How to get file and folder names.
+    public enum NameExtraction: Sendable {
+        /// Uses the system's display name. Localized but can be slow on iCloud folders.
+        case localized
+        /// Gets the name directly from the path. Fast but not localized.
+        case raw
+    }
+
     let url: URL
     let customisedName: String?
     let maxDepth: Int
@@ -15,6 +23,9 @@ public struct Directory: Sendable {
     let includeHiddenFiles: Bool
     let includeSymbolicLinks: Bool
     let printFullPath: Bool
+    let nameExtraction: NameExtraction
+    let skipDirectoryContents: @Sendable (String) -> Bool
+
 
     /// Directory/Group to be diagnosed
     /// - Parameters:
@@ -25,13 +36,17 @@ public struct Directory: Sendable {
     ///   - includeHiddenFiles: Whether hidden files should be captured. Defaults to `false`.
     ///   - includeSymbolicLinks: Whether symbolic links should be captured. Defaults to `false`.
     ///   - printFullPath: Whether the full path of the node should be printed or just the name. Defaults to `false`.
+    ///   - nameExtraction: How to extract node names. Defaults to `.localized`.
+    ///   - skipDirectoryContents: Closure to determine if a directory's contents should be skipped. Defaults to never skip.
     public init(url: URL,
                 customisedName: String? = nil,
                 maxDepth: Int = .max,
                 maxLength: Int = 10,
                 includeHiddenFiles: Bool = false,
                 includeSymbolicLinks: Bool = false,
-                printFullPath: Bool = false) {
+                printFullPath: Bool = false,
+                nameExtraction: NameExtraction = .localized,
+                skipDirectoryContents: @escaping @Sendable (String) -> Bool = { _ in false }) {
         self.url = url
         self.customisedName = customisedName
         self.maxDepth = maxDepth
@@ -39,6 +54,8 @@ public struct Directory: Sendable {
         self.includeHiddenFiles = includeHiddenFiles
         self.includeSymbolicLinks = includeSymbolicLinks
         self.printFullPath = printFullPath
+        self.nameExtraction = nameExtraction
+        self.skipDirectoryContents = skipDirectoryContents
     }
 }
 
@@ -93,7 +110,9 @@ public struct DirectoryTreesReporter: DiagnosticsReporting {
                     maxDepth: trunk.maxDepth,
                     maxLength: trunk.maxLength,
                     includeHiddenFiles: trunk.includeHiddenFiles,
-                    includeSymbolicLinks: trunk.includeSymbolicLinks
+                    includeSymbolicLinks: trunk.includeSymbolicLinks,
+                    nameExtraction: trunk.nameExtraction,
+                    skipDirectoryContents: trunk.skipDirectoryContents
                 ).make()
 
                 diagnostics.append("""
