@@ -1,3 +1,20 @@
+### 6.0.1
+- Add projects using Roadmap to README ([#185](https://github.com/AvdLee/Diagnostics/pull/185)) via [@AvdLee](https://github.com/AvdLee)
+- Add Helm for App Store Connect to projects list ([#186](https://github.com/AvdLee/Diagnostics/pull/186)) via [@hiddevdploeg](https://github.com/hiddevdploeg)
+- Bump rexml from 3.4.1 to 3.4.2 ([#188](https://github.com/AvdLee/Diagnostics/pull/188)) via [@dependabot\[bot\]](https://github.com/apps/dependabot)
+- Bump aws-sdk-s3 from 1.193.0 to 1.208.0 ([#192](https://github.com/AvdLee/Diagnostics/pull/192)) via [@dependabot\[bot\]](https://github.com/apps/dependabot)
+- Add performance optimizations for iCloud directory scanning ([#191](https://github.com/AvdLee/Diagnostics/pull/191)) via [@mihaho](https://github.com/mihaho)
+- Scope log file to bundle ID on unsandboxed macOS ([#202](https://github.com/AvdLee/Diagnostics/pull/202)) via [@czottmann](https://github.com/czottmann)
+- Add clarifying note for device machine identifiers ([#203](https://github.com/AvdLee/Diagnostics/pull/203)) via [@jack-old-archive](https://github.com/jack-old-archive)
+
+### 6.0.0
+- BREAKING CHANGE: Xcode 26 is required to use the latest Swift functionality
+- Update changelog for `5.0.0` release ([#174](https://github.com/AvdLee/Diagnostics/pull/174)) via [@raphkoebraam](https://github.com/raphkoebraam)
+- Add visionOS support ([#175](https://github.com/AvdLee/Diagnostics/pull/175)) via [@Rubenfer](https://github.com/Rubenfer)
+- Update Diagnostics to Swift 6 ([#182](https://github.com/AvdLee/Diagnostics/pull/182)) via [@AvdLee](https://github.com/AvdLee)
+- Clear contents for repository transfer to AvdLee ([#183](https://github.com/AvdLee/Diagnostics/pull/183)) via [@AvdLee](https://github.com/AvdLee)
+- Fix CI and add GitHub workflow for running tests on PRs ([#184](https://github.com/AvdLee/Diagnostics/pull/184)) via [@AvdLee](https://github.com/AvdLee)
+
 ### 5.0.0
 - Add Privacy Manifest ([#171](https://github.com/AvdLee/Diagnostics/pull/171), [#172](https://github.com/AvdLee/Diagnostics/pull/172) and [#173](https://github.com/AvdLee/Diagnostics/pull/173)) via [@peagasilva](https://github.com/peagasilva)
   - BREAKING CHANGE: `UserDefaultsReporter` is not part of all reporters anymore and must be instantiated to be used
