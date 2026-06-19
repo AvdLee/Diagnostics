@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/marketplace/marketplace.schema.json",
+  "name": "diagnostics-report-analyzer-skill",
+  "version": "1.0.0",
+  "owner": {
+    "name": "Antoine van der Lee",
+    "email": "contact@avanderlee.com"
+  },
+  "metadata": {
+    "description": "Analyze AvdLee Diagnostics HTML reports using embedded JSON first, with legacy HTML report fallback."
+  },
+  "plugins": [
+    {
+      "name": "diagnostics-report-analyzer",
+      "description": "Support and debugging guidance for AvdLee Diagnostics reports, session logs, app metadata, and MetricKit diagnostics.",
+      "repository": "https://github.com/AvdLee/Diagnostics",
+      "version": "1.0.0",
+      "author": {
+        "name": "Antoine van der Lee",
+        "email": "contact@avanderlee.com"
+      },
+      "license": "MIT",
+      "category": "development",
+      "keywords": [
+        "diagnostics",
+        "support",
+        "debugging",
+        "logs",
+        "html-report",
+        "json",
+        "swift",
+        "ios",
+        "macos"
+      ],
+      "tags": [
+        "diagnostics",
+        "support",
+        "debugging",
+        "logs",
+        "swift",
+        "ios",
+        "macos"
+      ],
+      "source": "./"
+    }
+  ]
+}
