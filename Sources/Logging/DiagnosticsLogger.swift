@@ -11,6 +11,10 @@ import Foundation
 import MetricKit
 
 #if os(macOS)
+import Security
+#endif
+
+#if os(macOS)
 import AppKit
 #else
 import UIKit
@@ -41,6 +45,9 @@ public final class DiagnosticsLogger: Sendable {
         let environment = ProcessInfo.processInfo.environment
         return environment["XCTestConfigurationFilePath"] != nil
             || environment["XCTestBundlePath"] != nil
+            || ProcessInfo.processInfo.arguments.contains { argument in
+                argument.hasSuffix(".xctest") || argument.contains(".xctest/")
+            }
             || NSClassFromString("XCTest.XCTestCase") != nil
             || NSClassFromString("XCTestCase") != nil
     }
@@ -208,11 +215,36 @@ extension DiagnosticsLogger {
     }
 }
 
-private extension FileManager {
+extension FileManager {
+    /// Location of the logger's Application Support directory.
+    ///
+    /// On sandboxed processes (iOS, tvOS, watchOS, and sandboxed macOS apps) the system already
+    /// scopes `~/Library/Application Support/` to a per-app container, so the base URL is returned
+    /// unchanged. On unsandboxed macOS apps the base URL is shared across every app on the
+    /// machine, which would cause `diagnostics_log.txt` to collide between apps. In that case we
+    /// append the main bundle's identifier as a subdirectory to keep the log app-scoped.
     var applicationSupportDirectory: URL {
-        let paths = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        return paths[0]
+        let baseURL = urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        #if os(macOS)
+        guard !Self.isSandboxed, let bundleIdentifier = Bundle.main.bundleIdentifier else {
+            return baseURL
+        }
+        return baseURL.appendingPathComponent(bundleIdentifier)
+        #else
+        return baseURL
+        #endif
     }
+
+    #if os(macOS)
+    /// Whether the current process has the `com.apple.security.app-sandbox` entitlement active.
+    /// Uses the Security framework's task-entitlement API rather than environment sniffing so the
+    /// check reflects the code signature rather than the inherited environment.
+    static var isSandboxed: Bool {
+        guard let task = SecTaskCreateFromSelf(nil) else { return false }
+        let value = SecTaskCopyValueForEntitlement(task, "com.apple.security.app-sandbox" as CFString, nil)
+        return (value as? Bool) ?? false
+    }
+    #endif
 
     func fileExistsAndIsFile(atPath path: String) -> Bool {
         var isDirectory: ObjCBool = false
