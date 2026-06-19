@@ -42,10 +42,14 @@ public final class DiagnosticsLogger: Sendable {
         maximumLogSize: 2 * 1024 * 1024 // 2 MB
     )
     private var isRunningTests: Bool {
-        return ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        let environment = ProcessInfo.processInfo.environment
+        return environment["XCTestConfigurationFilePath"] != nil
+            || environment["XCTestBundlePath"] != nil
             || ProcessInfo.processInfo.arguments.contains { argument in
                 argument.hasSuffix(".xctest") || argument.contains(".xctest/")
             }
+            || NSClassFromString("XCTest.XCTestCase") != nil
+            || NSClassFromString("XCTestCase") != nil
     }
 
     private let metricsMonitor = MetricsMonitor()
@@ -63,7 +67,9 @@ public final class DiagnosticsLogger: Sendable {
     /// Sets up the logger to be ready for usage. This needs to be called before any log messages are reported.
     /// This method also starts a new session.
     public static func setup() throws {
-        guard !isSetUp() || standard.isRunningTests else {
+        guard
+            !isSetUp() || standard.isRunningTests || !FileManager.default.fileExists(atPath: logFileLocation.path)
+        else {
             return
         }
         try standard.setup()

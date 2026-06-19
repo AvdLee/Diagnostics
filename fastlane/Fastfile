@@ -1,6 +1,6 @@
 desc 'Run Diagnostics tests'
 lane :test_diagnostics do |options|
-  test_package(package_name: 'Diagnostics', package_path: '.', parallel_testing: true)
+  test_package(package_name: 'Diagnostics', package_path: '.', parallel_testing: false)
 end
 
 desc 'Runs tests for a specific package'
@@ -56,7 +56,7 @@ lane :test_project do |options|
     skip_slack: true,
     output_types: '',
     output_style: output_style,
-    xcargs: "CI='true' RECORD_SNAPSHOTS=${ENV['RECORD_SNAPSHOTS']}",
+    xcargs: "CI='true' RECORD_SNAPSHOTS=${ENV['RECORD_SNAPSHOTS']} -testLanguage en",
     xcodebuild_formatter: 'xcbeautify --renderer github-actions --preserve-unbeautified',
     suppress_xcode_output: false,
     include_simulator_logs: false,
