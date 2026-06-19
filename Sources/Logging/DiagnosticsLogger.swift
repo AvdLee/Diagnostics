@@ -9,7 +9,10 @@
 import ExceptionCatcher
 import Foundation
 import MetricKit
+
+#if os(macOS)
 import Security
+#endif
 
 #if os(macOS)
 import AppKit
@@ -40,6 +43,9 @@ public final class DiagnosticsLogger: Sendable {
     )
     private var isRunningTests: Bool {
         return ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || ProcessInfo.processInfo.arguments.contains { argument in
+                argument.hasSuffix(".xctest") || argument.contains(".xctest/")
+            }
     }
 
     private let metricsMonitor = MetricsMonitor()

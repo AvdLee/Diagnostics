@@ -14,13 +14,14 @@ final class DiagnosticsLoggerTests: XCTestCase {
     /// so that multiple unsandboxed apps embedding this package do not collide on the same
     /// `diagnostics_log.txt` at `~/Library/Application Support/`.
     func testApplicationSupportDirectoryIsScopedByBundleIDWhenUnsandboxed() throws {
-        XCTAssertFalse(FileManager.isSandboxed, "The swift test runner is expected to be unsandboxed.")
+        try XCTSkipIf(FileManager.isSandboxed, "Application Support directory remains container-scoped in sandboxed processes.")
 
         let bundleIdentifier = try XCTUnwrap(Bundle.main.bundleIdentifier)
-        let path = FileManager.default.applicationSupportDirectory.path
-        XCTAssertTrue(
-            path.hasSuffix("/\(bundleIdentifier)"),
-            "Expected Application Support directory to end with /\(bundleIdentifier); got \(path)"
+        let url = FileManager.default.applicationSupportDirectory
+        XCTAssertEqual(
+            url.lastPathComponent,
+            bundleIdentifier,
+            "Expected Application Support directory to end with \(bundleIdentifier); got \(url.path)"
         )
     }
     #endif
