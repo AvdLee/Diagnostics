@@ -75,5 +75,24 @@ final class LogsTrimmerTests: XCTestCase {
         XCTAssertFalse(outputString.contains("Old structured log"))
         XCTAssertTrue(outputString.contains("New structured log"))
     }
+
+    /// It should trim legacy records before structured records in mixed-format files.
+    func testTrimmingMixedFormatLogsTrimsLegacyRecordsFirst() {
+        let legacyLog = """
+        <p class="system"><span class="log-message">Old legacy log</span></p>
+        """
+        let structuredSession = String(decoding: NewSession().logData, as: UTF8.self)
+        let structuredLog = String(decoding: SystemLog(line: "New structured log").logData, as: UTF8.self)
+
+        var inputData = Data((legacyLog + structuredSession + structuredLog).utf8)
+        let trimmer = LogsTrimmer(numberOfLinesToTrim: 1)
+
+        trimmer.trim(data: &inputData)
+
+        let outputString = String(decoding: inputData, as: UTF8.self)
+        XCTAssertFalse(outputString.contains("Old legacy log"))
+        XCTAssertTrue(outputString.contains("\"type\":\"sessionStart\""))
+        XCTAssertTrue(outputString.contains("New structured log"))
+    }
 }
 //  swiftlint:enable line_length

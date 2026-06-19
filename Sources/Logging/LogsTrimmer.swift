@@ -19,20 +19,27 @@ struct LogsTrimmer: Sendable {
 
     func trim(data: inout Data) {
         var logs = String(decoding: data, as: UTF8.self)
-        let structuredRecordsTrimmed = trimStructuredRecords(from: &logs)
-        guard structuredRecordsTrimmed < numberOfLinesToTrim else {
+        let legacyRecordsTrimmed = trimLegacyRecords(from: &logs, maximumNumberOfRecordsToTrim: numberOfLinesToTrim)
+        guard legacyRecordsTrimmed < numberOfLinesToTrim else {
             data = Data(logs.utf8)
             return
         }
 
+        _ = trimStructuredRecords(
+            from: &logs,
+            maximumNumberOfRecordsToTrim: numberOfLinesToTrim - legacyRecordsTrimmed
+        )
+        data = Data(logs.utf8)
+    }
+
+    private func trimLegacyRecords(from logs: inout String, maximumNumberOfRecordsToTrim: Int) -> Int {
         let nsLogs = logs as NSString
         let matches = LogsTrimmer.regex
             .matches(in: logs, range: NSRange(location: 0, length: nsLogs.length))
 
-        let linesToRemove = matches.prefix(numberOfLinesToTrim - structuredRecordsTrimmed)
+        let linesToRemove = matches.prefix(maximumNumberOfRecordsToTrim)
         guard let firstMatch = linesToRemove.first, let lastMatch = linesToRemove.last else {
-            data = Data(logs.utf8)
-            return
+            return 0
         }
 
         let range = NSRange(
@@ -41,14 +48,14 @@ struct LogsTrimmer: Sendable {
         )
 
         logs = nsLogs.replacingCharacters(in: range, with: "")
-        data = Data(logs.utf8)
+        return linesToRemove.count
     }
 
-    private func trimStructuredRecords(from logs: inout String) -> Int {
+    private func trimStructuredRecords(from logs: inout String, maximumNumberOfRecordsToTrim: Int) -> Int {
         var trimmedRecords = 0
         var lines = logs.components(separatedBy: .newlines)
 
-        while trimmedRecords < numberOfLinesToTrim {
+        while trimmedRecords < maximumNumberOfRecordsToTrim {
             guard let index = lines.firstIndex(where: { line in
                 line.hasPrefix(DiagnosticsLogRecord.linePrefix) && line.contains("\"type\":\"log\"")
             }) else {

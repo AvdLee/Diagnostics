@@ -54,7 +54,7 @@ struct DiagnosticsLogSession: Codable, Sendable {
         } else {
             html += "<summary><div class=\"session-header\">"
             metadata.sorted(by: { $0.key < $1.key }).forEach { key, value in
-                html += "<p><span>\(key): </span>\(value.addingHTMLEncoding())</p>"
+                html += "<p><span>\(key.addingHTMLEncoding()): </span>\(value.addingHTMLEncoding())</p>"
             }
             html += "</div></summary>"
             events.forEach { event in

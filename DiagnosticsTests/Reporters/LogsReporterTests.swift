@@ -93,4 +93,18 @@ final class LogsReporterTests: XCTestCase {
         let structuredIndex = try XCTUnwrap(html.range(of: "structured update event")?.lowerBound)
         XCTAssertTrue(structuredIndex < legacyIndex)
     }
+
+    /// It should encode structured session metadata keys and values before rendering HTML.
+    func testStructuredSessionMetadataHTMLEncoding() {
+        let session = DiagnosticsLogSession(
+            title: "Session",
+            metadata: ["<Date>": "<2026-06-19>"]
+        )
+
+        let html = session.html()
+
+        XCTAssertTrue(html.contains("&lt;Date&gt;"))
+        XCTAssertTrue(html.contains("&lt;2026-06-19&gt;"))
+        XCTAssertFalse(html.contains("<span><Date>: </span>"))
+    }
 }
