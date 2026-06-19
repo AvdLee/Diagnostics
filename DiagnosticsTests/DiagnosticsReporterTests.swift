@@ -29,18 +29,25 @@ final class DiagnosticsReporterTests: XCTestCase {
         let reporters = [reporter]
         let report = await DiagnosticsReporter.create(using: reporters)
         let html = String(data: report.data, encoding: .utf8)!
+        let document = try XCTUnwrap(html.diagnosticsReportDocument)
 
-        XCTAssertTrue(html.contains("<h3>\(diagnosticsChapter.title)</h3>"))
-        XCTAssertTrue(html.contains(diagnosticsChapter.diagnostics as! String))
+        XCTAssertTrue(html.contains("<script id=\"diagnostics-report-data\" type=\"application/json\">"))
+        XCTAssertTrue(html.contains("<main id=\"diagnostics-report\" class=\"container\"></main>"))
+        XCTAssertEqual(document.chapters.first?.title, diagnosticsChapter.title)
+        if case .text(let value)? = document.chapters.first?.data {
+            XCTAssertEqual(value, diagnosticsChapter.diagnostics as! String)
+        } else {
+            XCTFail("Expected text diagnostics")
+        }
     }
 
     /// It should create a chapter for each reporter.
     func testReportingChapters() async throws {
         let report = await DiagnosticsReporter.create()
         let html = String(data: report.data, encoding: .utf8)!
+        let document = try XCTUnwrap(html.diagnosticsReportDocument)
         let expectedChaptersCount = DiagnosticsReporter.DefaultReporter.allCases.count
-        let chaptersCount = html.components(separatedBy: "<div class=\"chapter\"").count - 1
-        XCTAssertEqual(expectedChaptersCount, chaptersCount)
+        XCTAssertEqual(expectedChaptersCount, document.chapters.count)
     }
 
     /// It should filter using passed filters.
@@ -85,6 +92,19 @@ final class DiagnosticsReporterTests: XCTestCase {
         XCTAssertTrue(html.contains("<title>xctest - Diagnostics Report</title>"))
         XCTAssertTrue(html.contains(DiagnosticsReporter.style()))
         XCTAssertTrue(html.contains("</head>"))
+    }
+}
+
+private extension String {
+    var diagnosticsReportDocument: DiagnosticsReportDocument? {
+        guard
+            let startRange = range(of: "<script id=\"diagnostics-report-data\" type=\"application/json\">"),
+            let endRange = range(of: "</script>", range: startRange.upperBound..<endIndex) else {
+            return nil
+        }
+
+        let json = String(self[startRange.upperBound..<endRange.lowerBound])
+        return try? JSONDecoder().decode(DiagnosticsReportDocument.self, from: Data(json.utf8))
     }
 }
 

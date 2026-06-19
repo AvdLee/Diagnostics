@@ -25,11 +25,17 @@ extension Loggable {
     var cssClass: LoggableCSSClass? { nil }
 
     var logData: Data {
-        if let cssClass {
-            Data("<p class=\"\(cssClass)\">\(logMessage)</p>\n".utf8)
-        } else {
-            Data("\(message)\n".utf8)
+        if let newSession = self as? NewSession {
+            return DiagnosticsLogRecord(session: newSession).lineData
         }
+        return DiagnosticsLogRecord(loggable: self).lineData
+    }
+
+    var legacyLogData: Data {
+        if let cssClass {
+            return Data("<p class=\"\(cssClass)\">\(logMessage)</p>\n".utf8)
+        }
+        return Data("\(message)\n".utf8)
     }
 
     private var logMessage: String {
@@ -48,12 +54,19 @@ extension Loggable {
 
 struct NewSession: Loggable {
     let message: String
+    let metadata: [String: String]
 
     init() {
         let date = DateFormatter.current.string(from: Date())
         let appVersion = "\(Bundle.appVersion) (\(Bundle.appBuildNumber))"
         let system = "\(Device.systemName) \(Device.systemVersion)"
         let locale = Locale.preferredLanguages[0]
+        self.metadata = [
+            "Date": date,
+            "System": system,
+            "Locale": locale,
+            "Version": appVersion
+        ]
 
         /// We start with `\n\n---\n\n` for backwards compatibility since it's
         /// used for splitting the log into sections.

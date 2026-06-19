@@ -13,32 +13,19 @@ struct LogsReporter: DiagnosticsReporting {
 
     let title: String = "Session Logs"
 
-    var diagnostics: String {
+    var diagnostics: DiagnosticsLogReport {
         do {
             guard let data = try DiagnosticsLogger.standard.readLog(), let logs = String(data: data, encoding: .utf8) else {
-                return "Parsing the log failed (Unknown error)"
+                return DiagnosticsLogReport(sessions: [
+                    DiagnosticsLogSession(title: "Parsing failed", legacyHTML: "Parsing the log failed (Unknown error)")
+                ])
             }
 
-            let sessions = logs.components(separatedBy: "\n\n---\n\n").reversed()
-            var diagnostics = ""
-            sessions.forEach { session in
-                guard !session.isEmpty else { return }
-
-                diagnostics += "<div class=\"collapsible-session\">"
-                diagnostics += "<details>"
-                if session.isOldStyleSession {
-                    let title = session.split(whereSeparator: \.isNewline).first ?? "Unknown session title"
-                    diagnostics += "<summary>\(title)</summary>"
-                    diagnostics += "<pre>\(session.addingHTMLEncoding())</pre>"
-                } else {
-                    diagnostics += session
-                }
-                diagnostics += "</details>"
-                diagnostics += "</div>"
-            }
-            return diagnostics
+            return DiagnosticsLogParser().parse(logs)
         } catch {
-            return "Parsing the log failed (\(error.localizedDescription))"
+            return DiagnosticsLogReport(sessions: [
+                DiagnosticsLogSession(title: "Parsing failed", legacyHTML: "Parsing the log failed (\(error.localizedDescription))")
+            ])
         }
     }
 
@@ -49,12 +36,6 @@ struct LogsReporter: DiagnosticsReporting {
 
 extension LogsReporter: HTMLFormatting {
     static func format(_ diagnostics: Diagnostics) -> HTML {
-        return "<div id=\"log-sessions\">\(diagnostics)</div>"
-    }
-}
-
-private extension String {
-    var isOldStyleSession: Bool {
-        !contains("class=\"session-header")
+        return diagnostics.html()
     }
 }
