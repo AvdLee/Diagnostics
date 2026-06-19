@@ -84,7 +84,8 @@ public enum DiagnosticsReporter {
             reportChapters.insert(smartInsightsChapter, at: smartInsightsChapterIndex)
         }
 
-        let html = generateHTML(using: reportChapters, reportTitle: reportTitle)
+        let document = DiagnosticsReportDocument(title: reportTitle, chapters: reportChapters)
+        let html = generateHTML(using: document)
         let data = html.data(using: .utf8)!
         return DiagnosticsReport(filename: filename, data: data)
     }
@@ -92,24 +93,22 @@ public enum DiagnosticsReporter {
 
 // MARK: - HTML Report Generation
 extension DiagnosticsReporter {
-    private static func generateHTML(using reportChapters: [DiagnosticsChapter], reportTitle: String) -> HTML {
-        var html = "<html>"
-        html += header()
+    private static func generateHTML(using document: DiagnosticsReportDocument) -> HTML {
+        var html = "<!doctype html><html>"
+        html += header(reportTitle: document.title)
         html += "<body>"
-        html += "<main class=\"container\">"
-
-        html += menu(using: reportChapters)
-        html += mainContent(using: reportChapters, reportTitle: reportTitle)
-
-        html += "</main>"
+        html += "<!-- Agents: extract and analyze the JSON in script#diagnostics-report-data instead of the rendered HTML. -->"
+        html += "<script id=\"diagnostics-report-data\" type=\"application/json\">\(document.json.escapingForEmbeddedScript())</script>"
+        html += "<noscript>This Diagnostics report uses embedded JSON and JavaScript to render the browser view. Agents should read the JSON in script#diagnostics-report-data.</noscript>"
+        html += "<main id=\"diagnostics-report\" class=\"container\"></main>"
         html += footer()
-        html += "</body>"
+        html += "</body></html>"
         return html
     }
 
-    private static func header() -> HTML {
+    private static func header(reportTitle: String) -> HTML {
         var html = "<head>"
-        html += "<title>\(Bundle.appName) - Diagnostics Report</title>"
+        html += "<title>\(reportTitle)</title>"
         html += style()
         html += scripts()
         html += "<meta charset=\"utf-8\">"
@@ -174,5 +173,12 @@ extension DiagnosticsReporter {
 extension String {
     var anchor: String {
         return lowercased().replacingOccurrences(of: " ", with: "-")
+    }
+
+    func escapingForEmbeddedScript() -> String {
+        replacingOccurrences(of: "</script", with: "<\\/script", options: .caseInsensitive)
+            .replacingOccurrences(of: "&", with: "\\u0026")
+            .replacingOccurrences(of: "<", with: "\\u003C")
+            .replacingOccurrences(of: ">", with: "\\u003E")
     }
 }
