@@ -10,22 +10,52 @@ import Foundation
 
 #if os(OSX)
 import AppKit
+import UniformTypeIdentifiers
 #endif
 
 /// The actual diagnostics report containing the compiled data of all reporters.
 public struct DiagnosticsReport: Sendable {
+    public enum Format: String, Sendable {
+        case html
+        case json
+
+        var defaultFilename: String {
+            "Diagnostics-Report.\(fileExtension)"
+        }
+
+        var fileExtension: String {
+            rawValue
+        }
+
+        var mimeType: MimeType {
+            switch self {
+            case .html:
+                return .html
+            case .json:
+                return .json
+            }
+        }
+    }
+
     public enum MimeType: String, Sendable {
         case html = "text/html"
+        case json = "application/json"
     }
 
     /// The file name to use for the report.
     public let filename: String
 
-    /// The MIME type of the report. Defaults to `html`.
-    public let mimeType: MimeType = .html
+    /// The MIME type of the report.
+    public let mimeType: MimeType
 
     /// The data representation of the diagnostics report.
     public let data: Data
+
+    public init(filename: String, mimeType: MimeType = .html, data: Data) {
+        self.filename = filename
+        self.mimeType = mimeType
+        self.data = data
+    }
 }
 
 public extension DiagnosticsReport {
@@ -74,7 +104,7 @@ public extension DiagnosticsReport {
         savePanel.canCreateDirectories = true
         savePanel.showsTagField = false
         savePanel.directoryURL = URL(string: initialDirectoryPath)
-        savePanel.allowedContentTypes = [.html]
+        savePanel.allowedContentTypes = [mimeType.contentType]
         savePanel.nameFieldStringValue = filename
         savePanel.title = "Save Diagnostics Report"
         savePanel.message = "Save the Diagnostics report to the chosen location."
@@ -89,3 +119,16 @@ public extension DiagnosticsReport {
     }
 #endif
 }
+
+#if os(OSX)
+private extension DiagnosticsReport.MimeType {
+    var contentType: UTType {
+        switch self {
+        case .html:
+            return .html
+        case .json:
+            return .json
+        }
+    }
+}
+#endif

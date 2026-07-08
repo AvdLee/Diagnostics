@@ -45,11 +45,13 @@ public enum DiagnosticsReporter {
     ///   Use this parameter if you'd like to exclude certain reports.
     ///   - filters: The filters to use for the generated diagnostics. Should conform to the `DiagnosticsReportFilter` protocol.
     ///   - smartInsightsProvider: Provide any smart insights for the given `DiagnosticsChapter`.
-    ///   - filename: The filename to use for the report.
-    ///   - reportTitle: The title that is used in the header of the web page of the report. Defaults to `<App Name> - Diagnostics Report`.
+    ///   - filename: The filename to use for the report. Defaults to `Diagnostics-Report.html` or `Diagnostics-Report.json` based on `format`.
+    ///   - format: The output format to use for the report. Defaults to `html`.
+    ///   - reportTitle: The title that is used in the report. Defaults to `<App Name> - Diagnostics Report`.
     /// - Returns: The generated report.
     public nonisolated(nonsending) static func create(
-        filename: String = "Diagnostics-Report.html",
+        filename: String? = nil,
+        format: DiagnosticsReport.Format = .html,
         using reporters: [DiagnosticsReporting] = DefaultReporter.allReporters,
         filters: [DiagnosticsReportFilter.Type]? = nil,
         smartInsightsProvider: SmartInsightsProviding? = nil,
@@ -85,9 +87,20 @@ public enum DiagnosticsReporter {
         }
 
         let document = DiagnosticsReportDocument(title: reportTitle, chapters: reportChapters)
-        let html = generateHTML(using: document)
-        let data = html.data(using: .utf8)!
-        return DiagnosticsReport(filename: filename, data: data)
+        let reportContent: String
+        switch format {
+        case .html:
+            reportContent = generateHTML(using: document)
+        case .json:
+            reportContent = document.json
+        }
+
+        let data = reportContent.data(using: .utf8)!
+        return DiagnosticsReport(
+            filename: filename ?? format.defaultFilename,
+            mimeType: format.mimeType,
+            data: data
+        )
     }
 }
 

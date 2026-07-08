@@ -21,19 +21,26 @@ struct ContentView_iOS: View {
             Button("Create crash") {
                 performCrash()
             }
-            Button("Send Diagnostics") {
-                Task {
-                    let report = await DiagnosticsReportFactory.make()
-                    #if targetEnvironment(simulator)
-                        /// For debugging purposes you can save the report to desktop when testing on the simulator.
-                        /// This allows you to iterate fast on your report.
-                        report.saveToDesktop()
-                    #else
-                        self.report = report
-                    #endif
-                }
+            Button("Create HTML report") {
+                createReport(format: .html)
+            }
+            Button("Create JSON report") {
+                createReport(format: .json)
             }
         }.diagnosticsReportSheet(report: $report)
+    }
+
+    private func createReport(format: DiagnosticsReport.Format) {
+        Task { @MainActor in
+            let report = await DiagnosticsReportFactory.make(format: format)
+            #if targetEnvironment(simulator)
+                /// For debugging purposes you can save the report to desktop when testing on the simulator.
+                /// This allows you to iterate fast on your report.
+                report.saveToDesktop()
+            #else
+                self.report = report
+            #endif
+        }
     }
 }
 

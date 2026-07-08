@@ -1,5 +1,6 @@
 ### 7.0.0
 - NEW: Diagnostics reports are now agent-friendly single-file HTML documents with embedded structured JSON. The browser view is rendered from the JSON payload, while agents can inspect structured chapters, session metadata, log events, and crash diagnostics directly. Existing historic log sessions remain readable, and uncaught exceptions are persisted as timestamped `crash` events.
+- NEW: Diagnostics reports can now be created as standalone JSON using `DiagnosticsReporter.create(format: .json)`.
 
 ### 6.0.1
 - Add projects using Roadmap to README ([#185](https://github.com/AvdLee/Diagnostics/pull/185)) via [@AvdLee](https://github.com/AvdLee)
