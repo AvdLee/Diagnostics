@@ -115,6 +115,7 @@ struct SystemLog: Loggable {
 }
 
 struct ExceptionLog: Loggable {
+    let date: Date? = Date()
     let message: String
     let cssClass: LoggableCSSClass? = .crash
 

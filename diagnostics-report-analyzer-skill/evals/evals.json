@@ -20,7 +20,7 @@
     {
       "id": 3,
       "prompt": "This report contains both historic legacy sessions and newer structured sessions after an app update. Determine whether the reported issue started before or after the update.",
-      "expected_output": "Recognizes mixed-format sessions as expected, compares historic and newest sessions, and cites timestamps/version metadata when reasoning about the app update boundary.",
+      "expected_output": "Recognizes mixed-format sessions as expected, treats crash-like system lines as legacy crash evidence when no structured crash event exists, prefers structured crash events when present, and cites timestamps/version metadata when reasoning about the app update boundary.",
       "files": [
         "fixtures/mixed-format-report.html"
       ]

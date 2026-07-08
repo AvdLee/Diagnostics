@@ -117,6 +117,7 @@ final class LogsReporterTests: XCTestCase {
         let html = event.html()
 
         XCTAssertEqual(event.level, "crash")
+        XCTAssertNotNil(event.date)
         XCTAssertTrue(event.message.contains("CRASH:"))
         XCTAssertTrue(html.contains("<pre class=\"crash\">"))
         XCTAssertTrue(html.contains("Crash description"))

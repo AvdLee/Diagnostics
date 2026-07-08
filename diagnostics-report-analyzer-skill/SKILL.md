@@ -47,6 +47,7 @@ If the JSON script tag is absent, parse the HTML report directly:
 - Sessions are usually wrapped in `.collapsible-session details`.
 - Session metadata is often in `<summary><div class="session-header">...`.
 - Log levels are usually expressed as `.debug`, `.error`, `.system`, and `.crash`.
+- Older reports may only expose crashes as `system` lines such as `SYSTEM: *** Terminating app due to uncaught exception...` or `SYSTEM: *** First throw call stack:`.
 - Older plain sessions may use delimiter-like content and `<pre>` blocks.
 
 Keep fallback parsing focused. Do not load or restate the entire HTML file when a small section answers the question.
@@ -59,8 +60,9 @@ Analyze in this order:
 2. Inspect app/system metadata for app version, build, OS, device, locale, and environment.
 3. Inspect newest sessions first.
 4. Prioritize `crash` events, then `error` events, MetricKit diagnostics, and unusual system logs.
-5. Compare failing sessions with older sessions only when it helps explain a regression or repeated pattern.
-6. Inspect custom chapters for domain-specific state: feature flags, user defaults, directory trees, configuration, account state, or cached files.
+5. If a session has no `crash` event, treat crash-like `system` lines as legacy crash evidence, but prefer structured `crash` events when both exist.
+6. Compare failing sessions with older sessions only when it helps explain a regression or repeated pattern.
+7. Inspect custom chapters for domain-specific state: feature flags, user defaults, directory trees, configuration, account state, or cached files.
 
 ## Output Format
 
