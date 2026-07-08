@@ -2,7 +2,7 @@ import Foundation
 import MetricKit
 
 enum LoggableCSSClass: String, Sendable {
-    case debug, error, system
+    case crash, debug, error, system
 }
 
 protocol Loggable: Sendable {
@@ -31,25 +31,6 @@ extension Loggable {
         return DiagnosticsLogRecord(loggable: self).lineData
     }
 
-    var legacyLogData: Data {
-        if let cssClass {
-            return Data("<p class=\"\(cssClass)\">\(logMessage)</p>\n".utf8)
-        }
-        return Data("\(message)\n".utf8)
-    }
-
-    private var logMessage: String {
-        var messages: [String] = []
-        if let date {
-            let date = DateFormatter.current.string(from: date)
-            messages.append("<span class=\"log-date\">\(date)</span>")
-        }
-        if let prefix {
-            messages.append("<span class=\"log-prefix\">\(prefix)</span>")
-        }
-        messages.append("<span class=\"log-message\">\(self.message)</span>")
-        return messages.joined(separator: "<span class=\"log-separator\"> | </span>")
-    }
 }
 
 struct NewSession: Loggable {
@@ -135,6 +116,7 @@ struct SystemLog: Loggable {
 
 struct ExceptionLog: Loggable {
     let message: String
+    let cssClass: LoggableCSSClass? = .crash
 
     init(_ exception: NSException, description: String) {
         let message = """
@@ -159,6 +141,8 @@ struct ExceptionLog: Loggable {
 #if os(iOS)
 extension MXDiagnosticPayload: @unchecked @retroactive Sendable {}
 extension MXDiagnosticPayload: Loggable {
+    var cssClass: LoggableCSSClass? { .crash }
+
     var message: String {
         """
 

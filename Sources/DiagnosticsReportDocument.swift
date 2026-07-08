@@ -20,8 +20,8 @@ struct DiagnosticsReportDocument: Codable, Sendable {
         self.title = title
         self.agentHints = [
             "Agents should read this JSON payload instead of the rendered HTML.",
-            "Start with chapters where kind is logs, then inspect error and system events in the newest sessions first.",
-            "Use legacyHTML only as a fallback for custom diagnostics that do not expose structured data yet."
+            "Start with chapters where kind is logs, then inspect crash, error, and system events in the newest sessions first.",
+            "Use legacyHTML only as a browser-rendering fallback for custom diagnostics or HTML-formatted text; prefer data for analysis."
         ]
         self.chapters = chapters.map(DiagnosticsReportDocumentChapter.init)
     }
@@ -30,6 +30,7 @@ struct DiagnosticsReportDocument: Codable, Sendable {
 struct DiagnosticsReportDocumentChapter: Codable, Sendable {
     let id: String
     let title: String
+    let showTitle: Bool
     let kind: String
     let data: DiagnosticsReportDocumentValue
     let legacyHTML: String?
@@ -37,6 +38,7 @@ struct DiagnosticsReportDocumentChapter: Codable, Sendable {
     init(chapter: DiagnosticsChapter) {
         self.id = chapter.title.anchor
         self.title = chapter.title
+        self.showTitle = chapter.shouldShowTitle
         let reportDocumentValue = chapter.diagnostics.reportDocumentValue
 
         switch reportDocumentValue {
@@ -54,7 +56,11 @@ struct DiagnosticsReportDocumentChapter: Codable, Sendable {
 
         self.data = reportDocumentValue
 
-        if case .legacyHTML(let html) = reportDocumentValue {
+        if case .logs = reportDocumentValue {
+            self.legacyHTML = nil
+        } else if chapter.formatter != nil || chapter.diagnostics.prefersHTMLRendering {
+            self.legacyHTML = chapter.renderedContentHTML
+        } else if case .legacyHTML(let html) = reportDocumentValue {
             self.legacyHTML = html
         } else {
             self.legacyHTML = nil
@@ -153,6 +159,23 @@ extension Diagnostics {
         }
 
         return .legacyHTML(html())
+    }
+
+    var prefersHTMLRendering: Bool {
+        guard let text = self as? String else {
+            return false
+        }
+
+        return text.contains("<") && text.contains(">")
+    }
+}
+
+private extension DiagnosticsChapter {
+    var renderedContentHTML: HTML {
+        if let formatter {
+            return formatter.format(diagnostics)
+        }
+        return diagnostics.html()
     }
 }
 

@@ -32,10 +32,12 @@ Expected top-level fields:
 
 Expected chapter shapes:
 
+- `showTitle`: browser rendering hint; does not affect analysis.
 - `kind: "logs"` with `data.sessions`.
 - `kind: "table"` with `data.rows`.
 - `kind: "text"` or `kind: "preformatted"` with `data.value`.
 - `kind: "legacyHTML"` for custom diagnostics or fallback content.
+- `legacyHTML`: optional display HTML for chapters that need custom browser rendering. Prefer `data` for analysis unless `data.type` is `legacyHTML` or the structured fields do not answer the question.
 
 ### 2. Fall Back To Legacy HTML
 
@@ -44,7 +46,7 @@ If the JSON script tag is absent, parse the HTML report directly:
 - Session logs are usually inside `#log-sessions`.
 - Sessions are usually wrapped in `.collapsible-session details`.
 - Session metadata is often in `<summary><div class="session-header">...`.
-- Log levels are usually expressed as `.debug`, `.error`, and `.system`.
+- Log levels are usually expressed as `.debug`, `.error`, `.system`, and `.crash`.
 - Older plain sessions may use delimiter-like content and `<pre>` blocks.
 
 Keep fallback parsing focused. Do not load or restate the entire HTML file when a small section answers the question.
@@ -56,7 +58,7 @@ Analyze in this order:
 1. Read `agentHints` if present.
 2. Inspect app/system metadata for app version, build, OS, device, locale, and environment.
 3. Inspect newest sessions first.
-4. Prioritize `error` events, crashes, MetricKit diagnostics, and unusual system logs.
+4. Prioritize `crash` events, then `error` events, MetricKit diagnostics, and unusual system logs.
 5. Compare failing sessions with older sessions only when it helps explain a regression or repeated pattern.
 6. Inspect custom chapters for domain-specific state: feature flags, user defaults, directory trees, configuration, account state, or cached files.
 
@@ -84,7 +86,7 @@ Lead with the most likely explanation. If the evidence is inconclusive, say so a
 Diagnostics reports can be large. Stay selective:
 
 - Prefer the embedded JSON payload over raw HTML.
-- Start with newest sessions and error/crash events.
+- Start with newest sessions and crash/error events.
 - Summarize noisy system/debug logs by pattern before quoting individual entries.
 - Quote only short snippets that directly support a conclusion.
 - Avoid dumping raw logs unless the user explicitly asks.

@@ -39,8 +39,8 @@ function renderLogEvent(event) {
         return template.content;
     }
 
-    const paragraph = document.createElement('p');
-    paragraph.className = event.level || 'debug';
+    const element = event.level === 'crash' ? document.createElement('pre') : document.createElement('p');
+    element.className = event.level || 'debug';
 
     const parts = [];
     if (event.date) {
@@ -53,12 +53,12 @@ function renderLogEvent(event) {
 
     parts.forEach(([className, text], index) => {
         if (index > 0) {
-            appendTextElement(paragraph, 'span', ' | ', 'log-separator');
+            appendTextElement(element, 'span', ' | ', 'log-separator');
         }
-        appendTextElement(paragraph, 'span', text, className);
+        appendTextElement(element, 'span', text, className);
     });
 
-    return paragraph;
+    return element;
 }
 
 function renderLogSession(session) {
@@ -104,6 +104,11 @@ function renderChapterContent(chapter) {
     const content = document.createElement('div');
     content.className = 'chapter-content';
     const data = chapter.data || {};
+
+    if (chapter.legacyHTML) {
+        content.innerHTML = chapter.legacyHTML;
+        return content;
+    }
 
     if (data.type === 'table') {
         const table = document.createElement('table');
@@ -174,6 +179,7 @@ function renderDiagnosticsReport() {
 
     [
         ['system-logs', 'Show system logs'],
+        ['crash-logs', 'Show crash logs'],
         ['error-logs', 'Show error logs'],
         ['debug-logs', 'Show debug logs']
     ].forEach(([id, label]) => {
@@ -206,7 +212,9 @@ function renderDiagnosticsReport() {
         anchor.className = 'anchor';
         anchor.id = chapter.id;
         chapterElement.appendChild(anchor);
-        appendTextElement(chapterElement, 'h3', chapter.title);
+        if (chapter.showTitle !== false) {
+            appendTextElement(chapterElement, 'h3', chapter.title);
+        }
         chapterElement.appendChild(renderChapterContent(chapter));
         mainContent.appendChild(chapterElement);
     });
@@ -259,6 +267,17 @@ window.onload = (function () {
             showSystemLogs(true, '.error');
           } else {
             showSystemLogs(false, '.error');
+          }
+        });
+    }
+
+    const crashLogs = document.getElementById('crash-logs');
+    if (crashLogs) {
+        crashLogs.addEventListener('change', (event) => {
+          if (event.currentTarget.checked) {
+            showSystemLogs(true, '.crash');
+          } else {
+            showSystemLogs(false, '.crash');
           }
         });
     }

@@ -96,6 +96,9 @@ struct DiagnosticsLogEvent: Codable, Sendable {
         }
         parts.append("<span class=\"log-message\">\(message.addingHTMLEncoding())</span>")
         let content = parts.joined(separator: "<span class=\"log-separator\"> | </span>")
+        if level == LoggableCSSClass.crash.rawValue {
+            return "<pre class=\"\(level)\">\(content)</pre>\n"
+        }
         return "<p class=\"\(level)\">\(content)</p>\n"
     }
 }

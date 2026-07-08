@@ -143,31 +143,6 @@ extension DiagnosticsReporter {
         return "<script type=\"text/javascript\">\(scripts)</script>"
     }
 
-    //  swiftlint:disable line_length
-    static func menu(using chapters: [DiagnosticsChapter]) -> HTML {
-        var html = "<aside class=\"nav-container\"><nav><ul>"
-        chapters.forEach { chapter in
-            html += "<li><a href=\"#\(chapter.title.anchor)\">\(chapter.title)</a></li>"
-        }
-        html += "<li><button id=\"expand-sections\">Expand sessions</button></li>"
-        html += "<li><button id=\"collapse-sections\">Collapse sessions</button></li>"
-        html += "<li><input type=\"checkbox\" id=\"system-logs\" name=\"system-logs\" checked><label for=\"system-logs\">Show system logs</label></li>"
-        html += "<li><input type=\"checkbox\" id=\"error-logs\" name=\"error-logs\" checked><label for=\"error-logs\">Show error logs</label></li>"
-        html += "<li><input type=\"checkbox\" id=\"debug-logs\" name=\"debug-logs\" checked><label for=\"debug-logs\">Show debug logs</label></li>"
-        html += "</ul></nav></aside>"
-        return html
-    }
-    //  swiftlint:enable line_length
-
-    static func mainContent(using chapters: [DiagnosticsChapter], reportTitle: String) -> HTML {
-        var html = "<div class=\"main-content\">"
-        html += "<header><h1>\(reportTitle)</h1></header>"
-        chapters.forEach { chapter in
-            html += chapter.html()
-        }
-        html += "</div>"
-        return html
-    }
 }
 
 extension String {
@@ -176,8 +151,7 @@ extension String {
     }
 
     func escapingForEmbeddedScript() -> String {
-        replacingOccurrences(of: "</script", with: "<\\/script", options: .caseInsensitive)
-            .replacingOccurrences(of: "&", with: "\\u0026")
+        replacingOccurrences(of: "&", with: "\\u0026")
             .replacingOccurrences(of: "<", with: "\\u003C")
             .replacingOccurrences(of: ">", with: "\\u003E")
     }

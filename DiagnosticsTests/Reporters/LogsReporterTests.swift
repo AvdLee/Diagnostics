@@ -107,4 +107,18 @@ final class LogsReporterTests: XCTestCase {
         XCTAssertTrue(html.contains("&lt;2026-06-19&gt;"))
         XCTAssertFalse(html.contains("<span><Date>: </span>"))
     }
+
+    func testExceptionLogUsesCrashLevelAndPreformattedHTML() throws {
+        let exception = NSException(name: .genericException, reason: "Boom")
+        let recordLine = String(decoding: ExceptionLog(exception, description: "Crash description").logData, as: UTF8.self)
+
+        let report = DiagnosticsLogParser().parse(recordLine)
+        let event = try XCTUnwrap(report.sessions.first?.events.first)
+        let html = event.html()
+
+        XCTAssertEqual(event.level, "crash")
+        XCTAssertTrue(event.message.contains("CRASH:"))
+        XCTAssertTrue(html.contains("<pre class=\"crash\">"))
+        XCTAssertTrue(html.contains("Crash description"))
+    }
 }
