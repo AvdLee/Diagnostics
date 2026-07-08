@@ -31,8 +31,28 @@ final class DiagnosticsReporterTests: XCTestCase {
         let html = String(data: report.data, encoding: .utf8)!
         let document = try XCTUnwrap(html.diagnosticsReportDocument)
 
+        XCTAssertEqual(report.filename, "Diagnostics-Report.html")
+        XCTAssertEqual(report.mimeType, .html)
         XCTAssertTrue(html.contains("<script id=\"diagnostics-report-data\" type=\"application/json\">"))
         XCTAssertTrue(html.contains("<main id=\"diagnostics-report\" class=\"container\"></main>"))
+        XCTAssertEqual(document.chapters.first?.title, diagnosticsChapter.title)
+        if case .text(let value)? = document.chapters.first?.data {
+            XCTAssertEqual(value, diagnosticsChapter.diagnostics as! String)
+        } else {
+            XCTFail("Expected text diagnostics")
+        }
+    }
+
+    func testJSONGeneration() async throws {
+        let diagnosticsChapter = DiagnosticsChapter(title: UUID().uuidString, diagnostics: UUID().uuidString)
+        var reporter = MockedReporter()
+        reporter.diagnosticsChapter = diagnosticsChapter
+        let reporters = [reporter]
+        let report = await DiagnosticsReporter.create(format: .json, using: reporters)
+        let document = try JSONDecoder().decode(DiagnosticsReportDocument.self, from: report.data)
+
+        XCTAssertEqual(report.filename, "Diagnostics-Report.json")
+        XCTAssertEqual(report.mimeType, .json)
         XCTAssertEqual(document.chapters.first?.title, diagnosticsChapter.title)
         if case .text(let value)? = document.chapters.first?.data {
             XCTAssertEqual(value, diagnosticsChapter.diagnostics as! String)
@@ -96,6 +116,21 @@ final class DiagnosticsReporterTests: XCTestCase {
         let html = String(data: report.data, encoding: .utf8)!
         XCTAssertFalse(html.contains(keyToFilter))
         XCTAssertTrue(html.contains("FILTERED"))
+    }
+
+    func testJSONReportAppliesFilters() async throws {
+        let keyToFilter = UUID().uuidString
+        let mockedReport = MockedReport(diagnostics: [keyToFilter: UUID().uuidString])
+        let report = await DiagnosticsReporter.create(format: .json, using: [mockedReport], filters: [MockedFilter.self])
+        let json = String(data: report.data, encoding: .utf8)!
+        let document = try JSONDecoder().decode(DiagnosticsReportDocument.self, from: report.data)
+
+        XCTAssertFalse(json.contains(keyToFilter))
+        if case .text(let value)? = document.chapters.first?.data {
+            XCTAssertEqual(value, "FILTERED")
+        } else {
+            XCTFail("Expected filtered text diagnostics")
+        }
     }
 
     func testWithoutProvidingSmartInsightsProvider() async throws {

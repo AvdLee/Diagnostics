@@ -40,7 +40,7 @@ The library allows to easily attach the Diagnostics Report as an attachment to t
     - System logs divided per session
 - [x] Possibility to filter out sensitive data using a `DiagnosticsReportFilter`
 - [x] A custom `DiagnosticsLogger` to add your own logs
-- [x] Agent-friendly single-file HTML reports with embedded structured JSON
+- [x] Agent-friendly single-file HTML reports with embedded structured JSON or standalone JSON output
 - [x] Smart insights like _"⚠️ User is low on storage"_ and *"✅ User is using the latest app version"*
 - [x] Flexible setup to add your own smart insights
 - [x] Flexible setup to add your own custom diagnostics
@@ -144,6 +144,12 @@ Diagnostics reports remain a single `.html` attachment that users can email and 
 Support agents and AI tools should parse that JSON first instead of loading the rendered HTML. The payload contains report metadata, agent hints, structured chapters, session metadata, and log events with levels like `debug`, `system`, `error`, and `crash`.
 
 The browser view is generated from this JSON. Chapters can still include `legacyHTML` when custom formatting is needed, and older on-device log sessions remain readable after users update to a newer Diagnostics version. This repository also includes a reusable analyzer skill in `diagnostics-report-analyzer-skill` for clients that support agent skills/plugins.
+
+If your support workflow consumes JSON directly, create a standalone JSON report instead:
+
+```swift
+let report = await DiagnosticsReporter.create(format: .json)
+```
 
 ### Install the Agent Skill
 

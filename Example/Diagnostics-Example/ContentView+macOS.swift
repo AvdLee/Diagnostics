@@ -27,16 +27,25 @@ struct ContentView_macOS: View {
             Button("Create crash") {
                 performCrash()
             }
-            Button("Send Diagnostics") {
-                report()
+            Button("Create HTML report") {
+                report(format: .html)
+            }
+            Button("Create JSON report") {
+                report(format: .json)
             }
         }
     }
     
-    private func report() {
+    private func report(format: DiagnosticsReport.Format) {
+        Task { @MainActor in
+            await createReport(format: format)
+        }
+    }
 
+    @MainActor
+    private func createReport(format: DiagnosticsReport.Format) async {
         /// Create the report.
-        let report = DiagnosticsReportFactory.make()
+        let report = await DiagnosticsReportFactory.make(format: format)
 
         guard !saveToDesktop else {
             report.saveToDesktop()
@@ -50,7 +59,7 @@ struct ContentView_macOS: View {
         service.recipients = ["support@yourcompany.com"]
         service.subject = "Diagnostics Report"
 
-        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Diagnostics-Report.html")
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(report.filename)
 
         // remove previous report
         try? FileManager.default.removeItem(at: url)
