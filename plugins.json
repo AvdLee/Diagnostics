@@ -1,0 +1,14 @@
+{
+  "plugins": [
+    {
+      "name": "diagnostics-report-analyzer",
+      "version": "1.0.0",
+      "description": "Analyze AvdLee Diagnostics HTML reports using embedded JSON first, with legacy HTML report fallback.",
+      "repository": "https://github.com/AvdLee/Diagnostics",
+      "license": "MIT",
+      "skills": [
+        "./diagnostics-report-analyzer-skill"
+      ]
+    }
+  ]
+}

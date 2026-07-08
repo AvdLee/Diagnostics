@@ -29,18 +29,63 @@ final class DiagnosticsReporterTests: XCTestCase {
         let reporters = [reporter]
         let report = await DiagnosticsReporter.create(using: reporters)
         let html = String(data: report.data, encoding: .utf8)!
+        let document = try XCTUnwrap(html.diagnosticsReportDocument)
 
-        XCTAssertTrue(html.contains("<h3>\(diagnosticsChapter.title)</h3>"))
-        XCTAssertTrue(html.contains(diagnosticsChapter.diagnostics as! String))
+        XCTAssertTrue(html.contains("<script id=\"diagnostics-report-data\" type=\"application/json\">"))
+        XCTAssertTrue(html.contains("<main id=\"diagnostics-report\" class=\"container\"></main>"))
+        XCTAssertEqual(document.chapters.first?.title, diagnosticsChapter.title)
+        if case .text(let value)? = document.chapters.first?.data {
+            XCTAssertEqual(value, diagnosticsChapter.diagnostics as! String)
+        } else {
+            XCTFail("Expected text diagnostics")
+        }
     }
 
     /// It should create a chapter for each reporter.
     func testReportingChapters() async throws {
         let report = await DiagnosticsReporter.create()
         let html = String(data: report.data, encoding: .utf8)!
+        let document = try XCTUnwrap(html.diagnosticsReportDocument)
         let expectedChaptersCount = DiagnosticsReporter.DefaultReporter.allCases.count
-        let chaptersCount = html.components(separatedBy: "<div class=\"chapter\"").count - 1
-        XCTAssertEqual(expectedChaptersCount, chaptersCount)
+        XCTAssertEqual(expectedChaptersCount, document.chapters.count)
+    }
+
+    func testGeneralInfoPreservesFormattedHTMLAndHiddenTitle() async throws {
+        let report = await DiagnosticsReporter.create(using: [GeneralInfoReporter()])
+        let html = String(data: report.data, encoding: .utf8)!
+        let document = try XCTUnwrap(html.diagnosticsReportDocument)
+        let chapter = try XCTUnwrap(document.chapters.first)
+
+        XCTAssertFalse(chapter.showTitle)
+        XCTAssertTrue(chapter.legacyHTML?.contains("<p>This diagnostics report can help") == true)
+        if case .text(let value) = chapter.data {
+            XCTAssertTrue(value.contains("<p>This diagnostics report can help"))
+        } else {
+            XCTFail("Expected text diagnostics")
+        }
+    }
+
+    func testCustomFormatterPreservesBrowserHTMLAndStructuredData() async throws {
+        let suiteName = "DiagnosticsReporterTests-\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+        userDefaults.set("agent-friendly", forKey: "mode")
+        let reporter = UserDefaultsReporter(userDefaults: userDefaults, keys: ["mode"])
+
+        let report = await DiagnosticsReporter.create(using: [reporter])
+        let html = String(data: report.data, encoding: .utf8)!
+        let document = try XCTUnwrap(html.diagnosticsReportDocument)
+        let chapter = try XCTUnwrap(document.chapters.first)
+
+        XCTAssertTrue(chapter.legacyHTML?.contains("<pre>") == true)
+        XCTAssertTrue(chapter.legacyHTML?.contains("agent-friendly") == true)
+        if case .table(let rows) = chapter.data {
+            XCTAssertEqual(rows.first?.key, "mode")
+            XCTAssertEqual(rows.first?.value, "agent-friendly")
+        } else {
+            XCTFail("Expected table diagnostics")
+        }
     }
 
     /// It should filter using passed filters.
@@ -85,6 +130,19 @@ final class DiagnosticsReporterTests: XCTestCase {
         XCTAssertTrue(html.contains("<title>xctest - Diagnostics Report</title>"))
         XCTAssertTrue(html.contains(DiagnosticsReporter.style()))
         XCTAssertTrue(html.contains("</head>"))
+    }
+}
+
+private extension String {
+    var diagnosticsReportDocument: DiagnosticsReportDocument? {
+        guard
+            let startRange = range(of: "<script id=\"diagnostics-report-data\" type=\"application/json\">"),
+            let endRange = range(of: "</script>", range: startRange.upperBound..<endIndex) else {
+            return nil
+        }
+
+        let json = String(self[startRange.upperBound..<endRange.lowerBound])
+        return try? JSONDecoder().decode(DiagnosticsReportDocument.self, from: Data(json.utf8))
     }
 }
 

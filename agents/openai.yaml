@@ -1,0 +1,22 @@
+name: diagnostics-report-analyzer
+version: "1.0.0"
+description: >-
+  Analyze AvdLee Diagnostics HTML reports using embedded JSON first, with
+  legacy HTML report fallback for older customer attachments.
+author:
+  name: Antoine van der Lee
+  email: contact@avanderlee.com
+repository: https://github.com/AvdLee/Diagnostics
+license: MIT
+keywords:
+  - diagnostics
+  - support
+  - debugging
+  - logs
+  - html-report
+  - json
+  - swift
+  - ios
+  - macos
+skills:
+  - diagnostics-report-analyzer-skill

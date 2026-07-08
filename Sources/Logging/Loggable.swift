@@ -2,7 +2,7 @@ import Foundation
 import MetricKit
 
 enum LoggableCSSClass: String, Sendable {
-    case debug, error, system
+    case crash, debug, error, system
 }
 
 protocol Loggable: Sendable {
@@ -25,35 +25,29 @@ extension Loggable {
     var cssClass: LoggableCSSClass? { nil }
 
     var logData: Data {
-        if let cssClass {
-            Data("<p class=\"\(cssClass)\">\(logMessage)</p>\n".utf8)
-        } else {
-            Data("\(message)\n".utf8)
+        if let newSession = self as? NewSession {
+            return DiagnosticsLogRecord(session: newSession).lineData
         }
+        return DiagnosticsLogRecord(loggable: self).lineData
     }
 
-    private var logMessage: String {
-        var messages: [String] = []
-        if let date {
-            let date = DateFormatter.current.string(from: date)
-            messages.append("<span class=\"log-date\">\(date)</span>")
-        }
-        if let prefix {
-            messages.append("<span class=\"log-prefix\">\(prefix)</span>")
-        }
-        messages.append("<span class=\"log-message\">\(self.message)</span>")
-        return messages.joined(separator: "<span class=\"log-separator\"> | </span>")
-    }
 }
 
 struct NewSession: Loggable {
     let message: String
+    let metadata: [String: String]
 
     init() {
         let date = DateFormatter.current.string(from: Date())
         let appVersion = "\(Bundle.appVersion) (\(Bundle.appBuildNumber))"
         let system = "\(Device.systemName) \(Device.systemVersion)"
         let locale = Locale.preferredLanguages[0]
+        self.metadata = [
+            "Date": date,
+            "System": system,
+            "Locale": locale,
+            "Version": appVersion
+        ]
 
         /// We start with `\n\n---\n\n` for backwards compatibility since it's
         /// used for splitting the log into sections.
@@ -121,7 +115,9 @@ struct SystemLog: Loggable {
 }
 
 struct ExceptionLog: Loggable {
+    let date: Date? = Date()
     let message: String
+    let cssClass: LoggableCSSClass? = .crash
 
     init(_ exception: NSException, description: String) {
         let message = """
@@ -146,6 +142,8 @@ struct ExceptionLog: Loggable {
 #if os(iOS)
 extension MXDiagnosticPayload: @unchecked @retroactive Sendable {}
 extension MXDiagnosticPayload: Loggable {
+    var cssClass: LoggableCSSClass? { .crash }
+
     var message: String {
         """
 

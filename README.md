@@ -17,6 +17,8 @@ Diagnostics is a library written in Swift which makes it really easy to share Di
 - [Features](#features)
 - [Requirements](#requirements)
 - [Usage](#usage)
+    - [Agent-friendly reports](#agent-friendly-reports)
+    - [Install the Agent Skill](#install-the-agent-skill)
 	- [Using a custom UserDefaults type](#using-a-custom-userdefaults-type) 
 	- [Filtering out sensitive data](#filtering-out-sensitive-data) 
 	- [Adding your own custom logs](#adding-your-own-custom-logs)
@@ -38,6 +40,7 @@ The library allows to easily attach the Diagnostics Report as an attachment to t
     - System logs divided per session
 - [x] Possibility to filter out sensitive data using a `DiagnosticsReportFilter`
 - [x] A custom `DiagnosticsLogger` to add your own logs
+- [x] Agent-friendly single-file HTML reports with embedded structured JSON
 - [x] Smart insights like _"⚠️ User is low on storage"_ and *"✅ User is using the latest app version"*
 - [x] Flexible setup to add your own smart insights
 - [x] Flexible setup to add your own custom diagnostics
@@ -129,6 +132,28 @@ func send(report: DiagnosticsReport) {
     service.perform(withItems: [url])
 }
 ```
+
+### Agent-friendly reports
+
+Diagnostics reports remain a single `.html` attachment that users can email and open in a browser. New reports also embed a structured JSON payload in:
+
+```html
+<script id="diagnostics-report-data" type="application/json">
+```
+
+Support agents and AI tools should parse that JSON first instead of loading the rendered HTML. The payload contains report metadata, agent hints, structured chapters, session metadata, and log events with levels like `debug`, `system`, `error`, and `crash`.
+
+The browser view is generated from this JSON. Chapters can still include `legacyHTML` when custom formatting is needed, and older on-device log sessions remain readable after users update to a newer Diagnostics version. This repository also includes a reusable analyzer skill in `diagnostics-report-analyzer-skill` for clients that support agent skills/plugins.
+
+### Install the Agent Skill
+
+For the easiest setup, install the analyzer skill with `npx skills`:
+
+```bash
+npx skills add https://github.com/AvdLee/Diagnostics --skill diagnostics-report-analyzer-skill
+```
+
+See [agent-skill-install-instructions.md](agent-skill-install-instructions.md) for Claude, Cursor, OpenAI-compatible tools, pi, and manual installation options.
 
 ### Using a UserDefaultsReporter
 In order to use `UserDefaultsReporter`, you need to specify the desired `UserDefaults` instance together with all the keys you would like to read, and use it in `DiagnosticsReporter.create(filename:using:filters:smartInsightsProvider)` to create a `DiagnosticsReport`.

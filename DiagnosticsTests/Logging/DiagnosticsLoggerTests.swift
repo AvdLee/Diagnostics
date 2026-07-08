@@ -8,6 +8,30 @@ import XCTest
 
 final class DiagnosticsLoggerTests: XCTestCase {
 
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        try DiagnosticsLogger.setup()
+    }
+
+    override func tearDownWithError() throws {
+        try DiagnosticsLogger.standard.deleteLogs()
+        try super.tearDownWithError()
+    }
+
+    func testSynchronousCrashLogIsPersistedBeforeReturning() throws {
+        let exception = NSException(name: .genericException, reason: "Synchronous crash test")
+
+        DiagnosticsLogger.standard.logSynchronously(ExceptionLog(exception, description: "Uncaught Exception"))
+
+        let logData = try XCTUnwrap(DiagnosticsLogger.standard.readLog())
+        let log = String(decoding: logData, as: UTF8.self)
+
+        XCTAssertTrue(log.contains(DiagnosticsLogRecord.linePrefix))
+        XCTAssertTrue(log.contains("\"level\":\"crash\""))
+        XCTAssertTrue(log.contains("Synchronous crash test"))
+        XCTAssertTrue(log.contains("Uncaught Exception"))
+    }
+
     #if os(macOS)
     /// On unsandboxed macOS processes (including the `swift test` runner), the Application
     /// Support directory used for the log file must be scoped by the current bundle identifier

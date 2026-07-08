@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<body>
+<script id="diagnostics-report-data" type="application/json">
+{
+  "schemaVersion": 1,
+  "title": "Mixed Format Diagnostics Report",
+  "agentHints": [
+    "This report contains legacy sessions from before the app update and structured sessions after the update."
+  ],
+  "chapters": [
+    {
+      "id": "session-logs",
+      "title": "Session Logs",
+      "showTitle": true,
+      "kind": "logs",
+      "data": {
+        "type": "logs",
+        "sessions": [
+          {
+            "id": "legacy-session",
+            "title": "Legacy session",
+            "metadata": {},
+            "events": [],
+            "legacyHTML": "<summary><div class=\"session-header\"><p><span>Date: </span>2026-06-18 18:30:00</p><p><span>Version: </span>3.1.0 (3100)</p></div></summary><p class=\"debug\"><span class=\"log-message\">User opened settings successfully</span></p>"
+          },
+          {
+            "id": "structured-session",
+            "title": "Session 2026-06-19 10:00:00",
+            "metadata": { "Date": "2026-06-19 10:00:00", "Version": "3.2.0 (3200)" },
+            "events": [
+              { "date": "2026-06-19 10:00:03", "level": "system", "prefix": null, "message": "SYSTEM: *** Terminating app due to uncaught exception 'NSRangeException', reason: 'index 4 beyond bounds [0 .. 2]'", "legacyHTML": null },
+              { "date": "2026-06-19 10:00:06", "level": "error", "prefix": "SettingsStore.swift:L61", "message": "ERROR: migrationFailed | Missing settings schema version", "legacyHTML": null }
+            ],
+            "legacyHTML": null
+          },
+          {
+            "id": "structured-crash-session",
+            "title": "Session 2026-06-19 10:05:00",
+            "metadata": { "Date": "2026-06-19 10:05:00", "Version": "3.2.0 (3200)" },
+            "events": [
+              { "date": "2026-06-19 10:05:02", "level": "system", "prefix": null, "message": "SYSTEM: *** Terminating app due to uncaught exception 'NSRangeException', reason: 'index 4 beyond bounds [0 .. 2]'", "legacyHTML": null },
+              { "date": "2026-06-19 10:05:02", "level": "crash", "prefix": null, "message": "CRASH:\nDescription: Uncaught Exception\nException name: NSRangeException\nReason: index 4 beyond bounds [0 .. 2]", "legacyHTML": null }
+            ],
+            "legacyHTML": null
+          }
+        ]
+      },
+      "legacyHTML": null
+    }
+  ]
+}
+</script>
+<main id="diagnostics-report"></main>
+</body>
+</html>

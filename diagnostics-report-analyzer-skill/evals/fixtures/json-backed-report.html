@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head><title>Example Diagnostics Report</title></head>
+<body>
+<script id="diagnostics-report-data" type="application/json">
+{
+  "schemaVersion": 1,
+  "title": "Example App - Diagnostics Report",
+  "agentHints": [
+    "Agents should read this JSON payload instead of the rendered HTML.",
+    "Start with chapters where kind is logs, then inspect crash, error, and system events in the newest sessions first.",
+    "Use legacyHTML only as a browser-rendering fallback for custom diagnostics or HTML-formatted text; prefer data for analysis."
+  ],
+  "chapters": [
+    {
+      "id": "app-system-details",
+      "title": "App & System Details",
+      "showTitle": true,
+      "kind": "table",
+      "data": {
+        "type": "table",
+        "rows": [
+          { "key": "App Version", "value": "2.4.1 (2410)" },
+          { "key": "System", "value": "iOS 18.2" },
+          { "key": "Locale", "value": "en-US" }
+        ]
+      },
+      "legacyHTML": null
+    },
+    {
+      "id": "session-logs",
+      "title": "Session Logs",
+      "showTitle": true,
+      "kind": "logs",
+      "data": {
+        "type": "logs",
+        "sessions": [
+          {
+            "id": "old-session",
+            "title": "Session 2026-06-18 12:00:00",
+            "metadata": { "Date": "2026-06-18 12:00:00", "Version": "2.4.0 (2400)" },
+            "events": [
+              { "date": "2026-06-18 12:00:02", "level": "debug", "prefix": "Checkout.swift:L10", "message": "Checkout completed", "legacyHTML": null }
+            ],
+            "legacyHTML": null
+          },
+          {
+            "id": "new-session",
+            "title": "Session 2026-06-19 09:15:00",
+            "metadata": { "Date": "2026-06-19 09:15:00", "Version": "2.4.1 (2410)" },
+            "events": [
+              { "date": null, "level": "crash", "prefix": null, "message": "CRASH:\nDescription: app crashed during checkout restore\nReason: nil token after restore", "legacyHTML": null },
+              { "date": "2026-06-19 09:15:11", "level": "error", "prefix": "CheckoutStore.swift:L88", "message": "ERROR: paymentTokenMissing | The payment token was nil after app restore", "legacyHTML": null },
+              { "date": "2026-06-19 09:15:12", "level": "system", "prefix": null, "message": "SYSTEM: applicationWillTerminate", "legacyHTML": null }
+            ],
+            "legacyHTML": null
+          }
+        ]
+      },
+      "legacyHTML": null
+    }
+  ]
+}
+</script>
+<main id="diagnostics-report"></main>
+</body>
+</html>

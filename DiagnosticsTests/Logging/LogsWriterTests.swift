@@ -33,6 +33,26 @@ final class LogsWriterTests: XCTestCase {
         let contents = String(decoding: data, as: UTF8.self)
 
         XCTAssertTrue(contents.contains("Test log line"))
+        XCTAssertTrue(contents.contains(DiagnosticsLogRecord.linePrefix))
+    }
+
+    func testWriteAppendsStructuredDataAfterLegacyContent() throws {
+        let legacyContent = """
+        <summary><div class="session-header"><p><span>Date: </span>2026-01-01</p></div></summary>
+        <p class="debug"><span class="log-message">Legacy event</span></p>
+
+        """
+        try Data(legacyContent.utf8).write(to: tempLogFileURL)
+
+        let writer = LogsWriter(logFileLocation: tempLogFileURL, maximumLogSize: 1024 * 1024)
+        writer.write(SystemLog(line: "Structured event"))
+
+        let data = try Data(contentsOf: tempLogFileURL)
+        let contents = String(decoding: data, as: UTF8.self)
+
+        XCTAssertTrue(contents.contains("Legacy event"))
+        XCTAssertTrue(contents.contains("Structured event"))
+        XCTAssertTrue(contents.contains(DiagnosticsLogRecord.linePrefix))
     }
 
     func testTrimmingOccursWhenExceedingMaxSize() throws {

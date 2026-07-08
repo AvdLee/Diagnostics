@@ -84,7 +84,8 @@ public enum DiagnosticsReporter {
             reportChapters.insert(smartInsightsChapter, at: smartInsightsChapterIndex)
         }
 
-        let html = generateHTML(using: reportChapters, reportTitle: reportTitle)
+        let document = DiagnosticsReportDocument(title: reportTitle, chapters: reportChapters)
+        let html = generateHTML(using: document)
         let data = html.data(using: .utf8)!
         return DiagnosticsReport(filename: filename, data: data)
     }
@@ -92,24 +93,22 @@ public enum DiagnosticsReporter {
 
 // MARK: - HTML Report Generation
 extension DiagnosticsReporter {
-    private static func generateHTML(using reportChapters: [DiagnosticsChapter], reportTitle: String) -> HTML {
-        var html = "<html>"
-        html += header()
+    private static func generateHTML(using document: DiagnosticsReportDocument) -> HTML {
+        var html = "<!doctype html><html>"
+        html += header(reportTitle: document.title)
         html += "<body>"
-        html += "<main class=\"container\">"
-
-        html += menu(using: reportChapters)
-        html += mainContent(using: reportChapters, reportTitle: reportTitle)
-
-        html += "</main>"
+        html += "<!-- Agents: extract and analyze the JSON in script#diagnostics-report-data instead of the rendered HTML. -->"
+        html += "<script id=\"diagnostics-report-data\" type=\"application/json\">\(document.json.escapingForEmbeddedScript())</script>"
+        html += "<noscript>This Diagnostics report uses embedded JSON and JavaScript to render the browser view. Agents should read the JSON in script#diagnostics-report-data.</noscript>"
+        html += "<main id=\"diagnostics-report\" class=\"container\"></main>"
         html += footer()
-        html += "</body>"
+        html += "</body></html>"
         return html
     }
 
-    private static func header() -> HTML {
+    private static func header(reportTitle: String) -> HTML {
         var html = "<head>"
-        html += "<title>\(Bundle.appName) - Diagnostics Report</title>"
+        html += "<title>\(reportTitle)</title>"
         html += style()
         html += scripts()
         html += "<meta charset=\"utf-8\">"
@@ -144,35 +143,16 @@ extension DiagnosticsReporter {
         return "<script type=\"text/javascript\">\(scripts)</script>"
     }
 
-    //  swiftlint:disable line_length
-    static func menu(using chapters: [DiagnosticsChapter]) -> HTML {
-        var html = "<aside class=\"nav-container\"><nav><ul>"
-        chapters.forEach { chapter in
-            html += "<li><a href=\"#\(chapter.title.anchor)\">\(chapter.title)</a></li>"
-        }
-        html += "<li><button id=\"expand-sections\">Expand sessions</button></li>"
-        html += "<li><button id=\"collapse-sections\">Collapse sessions</button></li>"
-        html += "<li><input type=\"checkbox\" id=\"system-logs\" name=\"system-logs\" checked><label for=\"system-logs\">Show system logs</label></li>"
-        html += "<li><input type=\"checkbox\" id=\"error-logs\" name=\"error-logs\" checked><label for=\"error-logs\">Show error logs</label></li>"
-        html += "<li><input type=\"checkbox\" id=\"debug-logs\" name=\"debug-logs\" checked><label for=\"debug-logs\">Show debug logs</label></li>"
-        html += "</ul></nav></aside>"
-        return html
-    }
-    //  swiftlint:enable line_length
-
-    static func mainContent(using chapters: [DiagnosticsChapter], reportTitle: String) -> HTML {
-        var html = "<div class=\"main-content\">"
-        html += "<header><h1>\(reportTitle)</h1></header>"
-        chapters.forEach { chapter in
-            html += chapter.html()
-        }
-        html += "</div>"
-        return html
-    }
 }
 
 extension String {
     var anchor: String {
         return lowercased().replacingOccurrences(of: " ", with: "-")
+    }
+
+    func escapingForEmbeddedScript() -> String {
+        replacingOccurrences(of: "&", with: "\\u0026")
+            .replacingOccurrences(of: "<", with: "\\u003C")
+            .replacingOccurrences(of: ">", with: "\\u003E")
     }
 }
