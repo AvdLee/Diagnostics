@@ -23,7 +23,7 @@ final class MetricsMonitor: NSObject, Sendable {
 
     /// Creates a new log section with the current thread call stack symbols.
     private static func logExceptionUsingCallStackSymbols(_ exception: NSException, description: String) {
-        DiagnosticsLogger.standard.log(ExceptionLog(exception, description: description))
+        DiagnosticsLogger.standard.logSynchronously(ExceptionLog(exception, description: description))
     }
 }
 

@@ -177,6 +177,16 @@ extension DiagnosticsLogger {
             self?.logsWriter.write(loggable)
         }
     }
+
+    func logSynchronously(_ loggable: Loggable) {
+        guard isSetup else {
+            return assertionFailure("Trying to log a message while not set up")
+        }
+
+        queue.sync { [weak self] in
+            self?.logsWriter.write(loggable)
+        }
+    }
 }
 
 // MARK: - System logs
