@@ -31,7 +31,7 @@ extension DiagnosticsLogger {
     /// | debug          | debug             |
     /// | info           | debug             |
     /// | notice         | debug             |
-    /// | warning        | debug             |
+    /// | warning        | error             |
     /// | error          | error             |
     /// | critical       | error             |
     public struct SwiftLogHandler: LogHandler, @unchecked Sendable {
@@ -89,11 +89,11 @@ extension DiagnosticsLogger {
             }
 
             switch level {
-            case .trace, .debug, .info, .notice, .warning:
+            case .trace, .debug, .info, .notice:
                 logger.log(
                     LogItem(.debug(message: fullMessage), file: file, function: function, line: line)
                 )
-            case .error, .critical:
+            case .warning, .error, .critical:
                 let error = DiagnosticsSwiftLogError(message: fullMessage, level: level)
                 logger.log(
                     LogItem(.error(error: error, description: nil), file: file, function: function, line: line)
