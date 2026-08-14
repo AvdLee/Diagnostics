@@ -120,6 +120,85 @@ final class LogsWriterTests: XCTestCase {
         XCTAssertLessThan(data.count, 500)
     }
     
+    func testTrimmingReducesLargeOverflowBelowMaxSize() throws {
+        let record = SystemLog(line: "Old log Message")
+        let maximumLogSize = record.logData.count * 100
+        let writer = LogsWriter(logFileLocation: tempLogFileURL, maximumLogSize: maximumLogSize)
+
+        // Pre-fill to three times the maximum size without triggering trimming.
+        var prefill = Data()
+        while prefill.count <= maximumLogSize * 3 {
+            prefill.append(record.logData)
+        }
+        try prefill.write(to: tempLogFileURL)
+
+        // A single write should trim the file all the way below the maximum size.
+        writer.write(SystemLog(line: "New log entry"))
+
+        let data = try Data(contentsOf: tempLogFileURL)
+        XCTAssertLessThanOrEqual(data.count, maximumLogSize)
+        XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("New log entry"))
+    }
+
+    func testRepeatedTrimmingKeepsLogBounded() throws {
+        let record = SystemLog(line: "Repeated log entry 0")
+        let maximumLogSize = record.logData.count * 20
+        let writer = LogsWriter(logFileLocation: tempLogFileURL, maximumLogSize: maximumLogSize)
+
+        for index in 0..<100 {
+            writer.write(SystemLog(line: "Repeated log entry \(index)"))
+        }
+
+        let data = try Data(contentsOf: tempLogFileURL)
+        let contents = String(decoding: data, as: UTF8.self)
+        XCTAssertLessThanOrEqual(data.count, maximumLogSize)
+        XCTAssertTrue(contents.contains("Repeated log entry 99"))
+    }
+
+    func testWriteRecordLargerThanMaximumSizeDoesNotTrap() throws {
+        let writer = LogsWriter(logFileLocation: tempLogFileURL, maximumLogSize: 100)
+        let hugeLine = String(repeating: "A", count: 1000)
+
+        writer.write(SystemLog(line: hugeLine))
+
+        // The oversized record itself is trimmable, so the file ends up bounded
+        // instead of terminating the app with an assertion failure.
+        let data = try Data(contentsOf: tempLogFileURL)
+        XCTAssertLessThanOrEqual(data.count, 100)
+    }
+
+    func testFailingTrimDoesNotTerminateAndKeepsAppendedData() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: directory.path)
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        let fileURL = directory.appendingPathComponent("locked_log.txt")
+        FileManager.default.createFile(atPath: fileURL.path, contents: nil)
+
+        let record = SystemLog(line: "Old log Message")
+        let maximumLogSize = record.logData.count * 10
+        var prefill = Data()
+        while prefill.count <= maximumLogSize {
+            prefill.append(record.logData)
+        }
+        try prefill.write(to: fileURL)
+
+        // Make the parent directory read-only so the atomic replacement cannot
+        // create its temporary file. The log file itself stays writable, so
+        // appending still succeeds.
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: directory.path)
+
+        let writer = LogsWriter(logFileLocation: fileURL, maximumLogSize: maximumLogSize)
+        writer.write(SystemLog(line: "New log entry"))
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: directory.path)
+        let contents = String(decoding: try Data(contentsOf: fileURL), as: UTF8.self)
+        XCTAssertTrue(contents.contains("New log entry"))
+    }
+
     func testLogsWriterPerformance() {
         measure {
             let tempDirectory = FileManager.default.temporaryDirectory
