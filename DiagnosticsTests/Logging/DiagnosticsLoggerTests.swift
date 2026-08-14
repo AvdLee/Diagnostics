@@ -32,6 +32,39 @@ final class DiagnosticsLoggerTests: XCTestCase {
         XCTAssertTrue(log.contains("Uncaught Exception"))
     }
 
+    /// Exercises trimming through the logger's serial queue at the production 2 MB
+    /// limit while reads happen concurrently, mirroring report generation during
+    /// heavy logging.
+    func testTrimmingViaLoggerQueueWithConcurrentReads() throws {
+        let logFileLocation = FileManager.default.applicationSupportDirectory.appendingPathComponent("diagnostics_log.txt")
+        let maximumLogSize = 2 * 1024 * 1024
+
+        let record = SystemLog(line: "Prefilled log entry").logData
+        var prefill = Data(capacity: maximumLogSize + record.count)
+        while prefill.count <= maximumLogSize {
+            prefill.append(record)
+        }
+        try prefill.write(to: logFileLocation)
+
+        let readsFinished = expectation(description: "Concurrent reads finished")
+        DispatchQueue.global().async {
+            for _ in 0..<10 {
+                _ = try? DiagnosticsLogger.standard.readLog()
+            }
+            readsFinished.fulfill()
+        }
+
+        for index in 0..<10 {
+            DiagnosticsLogger.log(message: "Concurrent log entry \(index)")
+        }
+
+        wait(for: [readsFinished], timeout: 30)
+
+        let logData = try XCTUnwrap(DiagnosticsLogger.standard.readLog())
+        XCTAssertLessThanOrEqual(logData.count, maximumLogSize)
+        XCTAssertTrue(String(decoding: logData, as: UTF8.self).contains("Concurrent log entry 9"))
+    }
+
     #if os(macOS)
     /// On unsandboxed macOS processes (including the `swift test` runner), the Application
     /// Support directory used for the log file must be scoped by the current bundle identifier
