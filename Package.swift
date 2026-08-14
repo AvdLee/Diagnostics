@@ -15,12 +15,16 @@ let package = Package(
         .library(name: "Diagnostics", targets: ["Diagnostics"])
     ],
     dependencies: [
-        .package(url: "https://github.com/sindresorhus/ExceptionCatcher", from: "2.0.0")
+        .package(url: "https://github.com/sindresorhus/ExceptionCatcher", from: "2.0.0"),
+        .package(url: "https://github.com/apple/swift-log", from: "1.14.0")
     ],
     targets: [
         .target(
             name: "Diagnostics",
-            dependencies: ["ExceptionCatcher"],
+            dependencies: [
+                "ExceptionCatcher",
+                .product(name: "Logging", package: "swift-log")
+            ],
             path: "Sources",
             resources: [
                 .process("style.css"),
