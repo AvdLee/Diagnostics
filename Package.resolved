@@ -1,5 +1,5 @@
 {
-  "originHash" : "f9e78cfca1033da0544ec8e06beb9ce7a8b3aefca58c6cf1f15d59afc7b432fc",
+  "originHash" : "964d1c99e81b0c912ad53c0d25d504fe1f71f2f298272e86e64dac1e6f052be1",
   "pins" : [
     {
       "identity" : "exceptioncatcher",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log",
       "state" : {
-        "revision" : "a878e7f8f46cfc0e1125e565b5c08e7d5272dc9a",
-        "version" : "1.14.0"
+        "revision" : "3ffafb9722d5d918c614feb496c8789a3b59d222",
+        "version" : "1.15.0"
       }
     }
   ],
