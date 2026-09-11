@@ -28,7 +28,7 @@ public final class DiagnosticsLogger: Sendable {
     private static let logFileLocation: URL = FileManager.default.applicationSupportDirectory.appendingPathComponent("diagnostics_log.txt")
 
     private let inputPipe = Pipe()
-    private let outputPipe = Pipe()
+    private let standardOutputReplay = StandardOutputReplay()
 
     private let queue = DispatchQueue(
         label: "com.swiftlee.diagnostics.logger",
@@ -202,7 +202,7 @@ extension DiagnosticsLogger {
 
         // Copy the STDOUT file descriptor into our output pipe's file descriptor
         // So we can write the strings back to STDOUT and it shows up again in the Xcode console.
-        dup2(STDOUT_FILENO, outputPipe.fileHandleForWriting.fileDescriptor)
+        dup2(STDOUT_FILENO, standardOutputReplay.fileDescriptor)
 
         // Send all output (STDOUT and STDERR) to our `Pipe`.
         dup2(inputPipe.fileHandleForWriting.fileDescriptor, STDOUT_FILENO)
@@ -210,17 +210,49 @@ extension DiagnosticsLogger {
     }
 
     private func handleLoggedData(_ data: Data) {
-        do {
-            try ExceptionCatcher.catch { () -> Void in
-                outputPipe.fileHandleForWriting.write(data)
+        standardOutputReplay.write(data)
 
-                let string = String(decoding: data, as: UTF8.self)
-                string.enumerateLines(invoking: { [weak self] line, _ in
-                    self?.log(SystemLog(line: line))
-                })
+        let string = String(decoding: data, as: UTF8.self)
+        string.enumerateLines(invoking: { [weak self] line, _ in
+            self?.log(SystemLog(line: line))
+        })
+    }
+}
+
+final class StandardOutputReplay: @unchecked Sendable {
+    private let fileHandle: FileHandle
+    private let lock = NSLock()
+    private var enabled = true
+
+    init(fileHandle: FileHandle = Pipe().fileHandleForWriting) {
+        self.fileHandle = fileHandle
+    }
+
+    var fileDescriptor: Int32 {
+        fileHandle.fileDescriptor
+    }
+
+    var isEnabled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return enabled
+    }
+
+    func write(_ data: Data) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        guard enabled else { return }
+
+        do {
+            try ExceptionCatcher.catch {
+                fileHandle.write(data)
             }
         } catch {
-            print("Exception was catched \(error)")
+            // stdout and stderr are redirected into the diagnostics input pipe.
+            // Reporting this failure through either stream would recursively
+            // invoke this method, so disable replay silently.
+            enabled = false
         }
     }
 }

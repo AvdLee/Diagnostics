@@ -32,6 +32,22 @@ final class DiagnosticsLoggerTests: XCTestCase {
         XCTAssertTrue(log.contains("Uncaught Exception"))
     }
 
+    func testStandardOutputReplayDisablesItselfAfterWriteFailure() {
+        let pipe = Pipe()
+        let closedFileHandle = pipe.fileHandleForWriting
+        closedFileHandle.closeFile()
+        let replay = StandardOutputReplay(fileHandle: closedFileHandle)
+
+        replay.write(Data("First message".utf8))
+
+        XCTAssertFalse(replay.isEnabled)
+
+        // A second write must be ignored instead of repeatedly raising and
+        // handling an Objective-C exception.
+        replay.write(Data("Second message".utf8))
+        XCTAssertFalse(replay.isEnabled)
+    }
+
     /// Exercises trimming through the logger's serial queue at the production 2 MB
     /// limit while reads happen concurrently, mirroring report generation during
     /// heavy logging.
