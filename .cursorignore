@@ -1,0 +1,21 @@
+# Xcode and Swift build output
+DerivedData/
+.build/
+**/.build/
+**/xcuserdata/
+**/*.xcuserstate
+**/*.xcresult
+**/*.xcarchive
+**/*.dSYM/
+
+# Node, Ruby, and automation output
+node_modules/
+.bundle/
+vendor/bundle/
+fastlane/report.xml
+fastlane/test_output/
+fastlane/Preview.html
+
+# Logs and operating-system metadata
+**/*.log
+**/.DS_Store
