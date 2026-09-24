@@ -21,7 +21,7 @@ import UIKit
 #endif
 
 /// A Diagnostics Logger to log messages to which will end up in the Diagnostics Report if using the default `LogsReporter`.
-/// Will keep a `.txt` log in the documents directory with the latest logs with a max size of 3 MB.
+/// Will keep a `.txt` log in the Application Support directory with the latest logs with a max size of 3 MB.
 public final class DiagnosticsLogger: Sendable {
     static let standard = DiagnosticsLogger()
 

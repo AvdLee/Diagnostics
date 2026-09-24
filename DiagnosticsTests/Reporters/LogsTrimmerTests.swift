@@ -45,6 +45,20 @@ struct LogsTrimmerTests {
         #expect(output == session + records[0])
     }
 
+    @Test("Messages containing record markers are not treated as session starts or empty system records")
+    func ignoresMarkersInsideMessages() throws {
+        let lookalikes = [
+            SystemLog(line: "\"type\":\"sessionStart\""),
+            SystemLog(line: "\"message\":\"SYSTEM: \",")
+        ].map(\.logData).reduce(Data(), +)
+        let input = session + records[0] + lookalikes
+        let expectedOutput = session + lookalikes
+
+        let output = try #require(LogsTrimmer.trim(input, toTargetSize: expectedOutput.count))
+
+        #expect(output == expectedOutput)
+    }
+
     @Test("Keeps the newest records that fit in the target, in order")
     func keepsNewestRecordsWithinTarget() throws {
         let input = session + records.reduce(Data(), +)
