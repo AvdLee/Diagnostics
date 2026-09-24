@@ -21,14 +21,16 @@ import UIKit
 #endif
 
 /// A Diagnostics Logger to log messages to which will end up in the Diagnostics Report if using the default `LogsReporter`.
-/// Will keep a `.txt` log in the documents directory with the latestlogs with a max size of 2 MB.
+/// Will keep a `.txt` log in the Application Support directory with the latest logs with a max size of 3 MB.
 public final class DiagnosticsLogger: Sendable {
     static let standard = DiagnosticsLogger()
+
+    static let maximumLogSize = 3 * 1024 * 1024 // 3 MB
 
     private static let logFileLocation: URL = FileManager.default.applicationSupportDirectory.appendingPathComponent("diagnostics_log.txt")
 
     private let inputPipe = Pipe()
-    private let standardOutputReplay = StandardOutputReplay()
+    private let standardOutputReplay: StandardOutputReplay
 
     private let queue = DispatchQueue(
         label: "com.swiftlee.diagnostics.logger",
@@ -37,10 +39,19 @@ public final class DiagnosticsLogger: Sendable {
         target: .global(qos: .utility)
     )
 
-    private let logsWriter = LogsWriter(
-        logFileLocation: DiagnosticsLogger.logFileLocation,
-        maximumLogSize: 2 * 1024 * 1024 // 2 MB
-    )
+    private let logsWriter: any LogsWriting
+
+    init(
+        logsWriter: any LogsWriting = LogsWriter(
+            logFileLocation: DiagnosticsLogger.logFileLocation,
+            maximumLogSize: DiagnosticsLogger.maximumLogSize
+        ),
+        standardOutputReplay: StandardOutputReplay = StandardOutputReplay()
+    ) {
+        self.logsWriter = logsWriter
+        self.standardOutputReplay = standardOutputReplay
+    }
+
     private var isRunningTests: Bool {
         let environment = ProcessInfo.processInfo.environment
         return environment["XCTestConfigurationFilePath"] != nil
@@ -169,12 +180,17 @@ extension DiagnosticsLogger {
     }
 
     func log(_ loggable: Loggable) {
+        log([loggable])
+    }
+
+    /// Writes all given records with a single append.
+    func log(_ loggables: [any Loggable]) {
         guard isSetup else {
             return assertionFailure("Trying to log a message while not set up")
         }
 
         queue.async { [weak self] in
-            self?.logsWriter.write(loggable)
+            self?.logsWriter.write(loggables)
         }
     }
 
@@ -184,8 +200,13 @@ extension DiagnosticsLogger {
         }
 
         queue.sync { [weak self] in
-            self?.logsWriter.write(loggable)
+            _ = self?.logsWriter.write([loggable])
         }
+    }
+
+    /// Blocks until all previously scheduled writes have finished.
+    func waitForPendingWrites() {
+        queue.sync {}
     }
 }
 
@@ -209,13 +230,22 @@ extension DiagnosticsLogger {
         dup2(inputPipe.fileHandleForWriting.fileDescriptor, STDERR_FILENO)
     }
 
-    private func handleLoggedData(_ data: Data) {
+    func handleLoggedData(_ data: Data) {
         standardOutputReplay.write(data)
 
-        let string = String(decoding: data, as: UTF8.self)
-        string.enumerateLines(invoking: { [weak self] line, _ in
-            self?.log(SystemLog(line: line))
-        })
+        let systemLogs = Self.systemLogs(from: data)
+        guard !systemLogs.isEmpty else { return }
+        log(systemLogs)
+    }
+
+    /// Converts captured stdout/stderr output into system logs, skipping empty and whitespace-only lines.
+    static func systemLogs(from data: Data) -> [SystemLog] {
+        var systemLogs: [SystemLog] = []
+        String(decoding: data, as: UTF8.self).enumerateLines { line, _ in
+            guard !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            systemLogs.append(SystemLog(line: line))
+        }
+        return systemLogs
     }
 }
 

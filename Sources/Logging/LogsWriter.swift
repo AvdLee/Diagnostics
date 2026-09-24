@@ -8,29 +8,56 @@
 import Foundation
 import os.log
 
-struct LogsWriter {
+protocol LogsWriting: Sendable {
+    @discardableResult
+    func write(_ loggables: [any Loggable]) -> LogsWriter.WriteOutcome
+}
+
+struct LogsWriter: LogsWriting {
+    enum WriteOutcome: Equatable {
+        case appended
+        case trimmed
+        case failed
+    }
+
     let logFileLocation: URL
     let maximumLogSize: Int
 
-    private static let numberOfRecordsToTrimPerBatch = 10
+    /// The size the log is trimmed down to once it exceeds `maximumLogSize`.
+    /// Leaving headroom below the maximum prevents trimming on every subsequent write.
+    var trimTargetSize: Int {
+        maximumLogSize / 4 * 3
+    }
 
-    func write(_ loggable: Loggable) {
+    @discardableResult
+    func write(_ loggable: any Loggable) -> WriteOutcome {
+        write([loggable])
+    }
+
+    @discardableResult
+    func write(_ loggables: [any Loggable]) -> WriteOutcome {
+        let data = loggables.reduce(into: Data()) { data, loggable in
+            data.append(loggable.logData)
+        }
+        guard !data.isEmpty else { return .appended }
+
         let totalFileSize: UInt64
         do {
-            totalFileSize = try append(loggable.logData)
+            totalFileSize = try append(data)
         } catch {
             Self.report(error, during: "appending log data")
-            return
+            return .failed
         }
 
         do {
-            try trimIfNecessary(logSize: totalFileSize)
+            return try trimIfNecessary(logSize: totalFileSize) ? .trimmed : .appended
         } catch {
             Self.report(error, during: "trimming the log file at \(logFileLocation.path)")
+            return .appended
         }
     }
 
-    /// Appends the record and returns the resulting total file size.
+    /// Appends the data and returns the resulting total file size.
     /// The file handle is closed before returning so trimming can safely
     /// replace the file without an open handle on the same path.
     private func append(_ data: Data) throws -> UInt64 {
@@ -43,26 +70,14 @@ struct LogsWriter {
         return try fileHandle.offset()
     }
 
-    private func trimIfNecessary(logSize: UInt64) throws {
-        guard logSize > maximumLogSize else { return }
+    private func trimIfNecessary(logSize: UInt64) throws -> Bool {
+        guard logSize > maximumLogSize else { return false }
 
-        var data = try Data(contentsOf: logFileLocation, options: .mappedIfSafe)
-        guard !data.isEmpty else { return }
+        let data = try Data(contentsOf: logFileLocation, options: .mappedIfSafe)
+        guard let trimmedData = LogsTrimmer.trim(data, toTargetSize: trimTargetSize) else { return false }
 
-        let trimmer = LogsTrimmer(numberOfLinesToTrim: Self.numberOfRecordsToTrimPerBatch)
-        var didTrim = false
-        while data.count > maximumLogSize {
-            let sizeBeforeTrim = data.count
-            trimmer.trim(data: &data)
-
-            /// Stop once no trimmable records remain to prevent an infinite loop,
-            /// e.g. when the remaining content consists of untrimmable session headers.
-            guard data.count < sizeBeforeTrim else { break }
-            didTrim = true
-        }
-
-        guard didTrim else { return }
-        try data.write(to: logFileLocation, options: .atomic)
+        try trimmedData.write(to: logFileLocation, options: .atomic)
+        return true
     }
 
     /// Reports a failure without terminating the app and without using `print`:

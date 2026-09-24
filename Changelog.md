@@ -1,3 +1,9 @@
+### 7.0.3
+- Fix high CPU usage from trimming the log file on nearly every write. Once the log exceeds its maximum size, it's now trimmed once to 75% of that size in a single pass, instead of by 10 records at a time.
+- Drop blank lines, legacy HTML sessions and empty system records first when trimming, so the log keeps more recent structured history. Session metadata is preserved for the oldest kept records.
+- Skip empty stdout/stderr lines and write all lines of a captured output chunk as a single append.
+- Increase the maximum log size from 2 MB to 3 MB.
+
 ### 7.0.0
 - NEW: Diagnostics reports are now agent-friendly single-file HTML documents with embedded structured JSON. The browser view is rendered from the JSON payload, while agents can inspect structured chapters, session metadata, log events, and crash diagnostics directly. Existing historic log sessions remain readable, and uncaught exceptions are persisted as timestamped `crash` events.
 - NEW: Diagnostics reports can now be created as standalone JSON using `DiagnosticsReporter.create(format: .json)`.
