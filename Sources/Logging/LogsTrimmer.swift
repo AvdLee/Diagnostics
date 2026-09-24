@@ -7,68 +7,123 @@
 
 import Foundation
 
-struct LogsTrimmer: Sendable {
-    let numberOfLinesToTrim: Int
+/// Trims the log file in a single linear pass by keeping the newest structured records that fit in a byte budget.
+///
+/// Content without diagnostic value is dropped first: legacy HTML sessions written before the first
+/// `DIAGNOSTICS_JSON` record, blank lines, and empty system records.
+enum LogsTrimmer {
+    private static let newline = UInt8(ascii: "\n")
+    private static let linePrefix = Data(DiagnosticsLogRecord.linePrefix.utf8)
+    private static let sessionStartMarker = Data("\"type\":\"sessionStart\"".utf8)
+    private static let emptySystemMessageMarkers = [
+        Data("\"message\":\"SYSTEM: \",".utf8),
+        Data("\"message\":\"SYSTEM: \"}".utf8)
+    ]
 
-    private static let regex: NSRegularExpression = {
-        /// Any line that starts with `<p class=` and ends with `</p>`.
-        /// This basically matches any log line that comes with a CSS class.
-        let pattern = "<p class=\".*?\">.*?</p>"
-        return try! NSRegularExpression(pattern: pattern)
-    }()
-
-    func trim(data: inout Data) {
-        var logs = String(decoding: data, as: UTF8.self)
-        let legacyRecordsTrimmed = trimLegacyRecords(from: &logs, maximumNumberOfRecordsToTrim: numberOfLinesToTrim)
-        guard legacyRecordsTrimmed < numberOfLinesToTrim else {
-            data = Data(logs.utf8)
-            return
-        }
-
-        _ = trimStructuredRecords(
-            from: &logs,
-            maximumNumberOfRecordsToTrim: numberOfLinesToTrim - legacyRecordsTrimmed
-        )
-        data = Data(logs.utf8)
+    private struct Line {
+        let range: Range<Int>
+        let isSessionStart: Bool
+        /// Index of the closest `sessionStart` line at or before this line.
+        let sessionStartIndex: Int?
     }
 
-    private func trimLegacyRecords(from logs: inout String, maximumNumberOfRecordsToTrim: Int) -> Int {
-        let nsLogs = logs as NSString
-        let matches = LogsTrimmer.regex
-            .matches(in: logs, range: NSRange(location: 0, length: nsLogs.length))
+    /// Returns the trimmed log data, or `nil` when trimming would not make the data smaller.
+    static func trim(_ data: Data, toTargetSize targetSize: Int) -> Data? {
+        guard data.startIndex == 0 else {
+            return trim(Data(data), toTargetSize: targetSize)
+        }
+        let lines = structuredLines(in: data)
 
-        let linesToRemove = matches.prefix(maximumNumberOfRecordsToTrim)
-        guard let firstMatch = linesToRemove.first, let lastMatch = linesToRemove.last else {
-            return 0
+        var firstKeptIndex = lines.endIndex
+        var keptSize = 0
+        while firstKeptIndex > lines.startIndex {
+            let lineSize = lines[firstKeptIndex - 1].range.count
+            guard keptSize + lineSize <= targetSize else { break }
+            keptSize += lineSize
+            firstKeptIndex -= 1
         }
 
-        let range = NSRange(
-            location: firstMatch.range.location,
-            length: lastMatch.range.upperBound - firstMatch.range.location
-        )
-
-        logs = nsLogs.replacingCharacters(in: range, with: "")
-        return linesToRemove.count
-    }
-
-    private func trimStructuredRecords(from logs: inout String, maximumNumberOfRecordsToTrim: Int) -> Int {
-        var trimmedRecords = 0
-        var lines = logs.components(separatedBy: .newlines)
-
-        while trimmedRecords < maximumNumberOfRecordsToTrim {
-            guard let index = lines.firstIndex(where: { line in
-                line.hasPrefix(DiagnosticsLogRecord.linePrefix) && line.contains("\"type\":\"log\"")
-            }) else {
+        /// Keep the `sessionStart` of the oldest kept record so its events keep their session metadata.
+        var sessionStartIndex: Int?
+        while firstKeptIndex < lines.endIndex {
+            let firstLine = lines[firstKeptIndex]
+            guard !firstLine.isSessionStart, let index = firstLine.sessionStartIndex else {
+                sessionStartIndex = nil
                 break
             }
 
-            lines.remove(at: index)
-            trimmedRecords += 1
+            sessionStartIndex = index
+            if keptSize + lines[index].range.count <= targetSize { break }
+
+            keptSize -= firstLine.range.count
+            firstKeptIndex += 1
+        }
+        if firstKeptIndex == lines.endIndex {
+            sessionStartIndex = nil
         }
 
-        guard trimmedRecords > 0 else { return 0 }
+        let sessionStartSize = sessionStartIndex.map { lines[$0].range.count } ?? 0
+        guard keptSize + sessionStartSize < data.count else { return nil }
 
-        logs = lines.joined(separator: "\n")
-        return trimmedRecords
+        var trimmedData = Data(capacity: keptSize + sessionStartSize)
+        if let sessionStartIndex {
+            trimmedData.append(data[lines[sessionStartIndex].range])
+        }
+        for line in lines[firstKeptIndex...] {
+            trimmedData.append(data[line.range])
+        }
+        return trimmedData
+    }
+
+    /// Returns all non-empty structured records, with ranges that include their trailing newline.
+    private static func structuredLines(in data: Data) -> [Line] {
+        var lines: [Line] = []
+        var latestSessionStartIndex: Int?
+
+        data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
+            guard let baseAddress = buffer.baseAddress else { return }
+            let bytes = baseAddress.assumingMemoryBound(to: UInt8.self)
+            let count = buffer.count
+
+            var lineStart = 0
+            while lineStart < count {
+                let lineEnd: Int
+                let nextLineStart: Int
+                if let newlinePointer = memchr(bytes + lineStart, Int32(newline), count - lineStart) {
+                    lineEnd = bytes.distance(to: newlinePointer.assumingMemoryBound(to: UInt8.self))
+                    nextLineStart = lineEnd + 1
+                } else {
+                    lineEnd = count
+                    nextLineStart = count
+                }
+
+                let line = UnsafeRawBufferPointer(start: bytes + lineStart, count: lineEnd - lineStart)
+                if line.starts(with: linePrefix), !isEmptySystemRecord(line) {
+                    let isSessionStart = contains(sessionStartMarker, in: line)
+                    if isSessionStart {
+                        latestSessionStartIndex = lines.count
+                    }
+                    lines.append(Line(
+                        range: lineStart..<nextLineStart,
+                        isSessionStart: isSessionStart,
+                        sessionStartIndex: latestSessionStartIndex
+                    ))
+                }
+                lineStart = nextLineStart
+            }
+        }
+
+        return lines
+    }
+
+    private static func isEmptySystemRecord(_ line: UnsafeRawBufferPointer) -> Bool {
+        emptySystemMessageMarkers.contains { contains($0, in: line) }
+    }
+
+    private static func contains(_ marker: Data, in line: UnsafeRawBufferPointer) -> Bool {
+        marker.withUnsafeBytes { markerBuffer in
+            guard let markerAddress = markerBuffer.baseAddress, let lineAddress = line.baseAddress else { return false }
+            return memmem(lineAddress, line.count, markerAddress, markerBuffer.count) != nil
+        }
     }
 }

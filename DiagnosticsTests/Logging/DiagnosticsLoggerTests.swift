@@ -48,12 +48,12 @@ final class DiagnosticsLoggerTests: XCTestCase {
         XCTAssertFalse(replay.isEnabled)
     }
 
-    /// Exercises trimming through the logger's serial queue at the production 2 MB
+    /// Exercises trimming through the logger's serial queue at the production
     /// limit while reads happen concurrently, mirroring report generation during
     /// heavy logging.
     func testTrimmingViaLoggerQueueWithConcurrentReads() throws {
         let logFileLocation = FileManager.default.applicationSupportDirectory.appendingPathComponent("diagnostics_log.txt")
-        let maximumLogSize = 2 * 1024 * 1024
+        let maximumLogSize = DiagnosticsLogger.maximumLogSize
 
         let record = SystemLog(line: "Prefilled log entry").logData
         var prefill = Data(capacity: maximumLogSize + record.count)
