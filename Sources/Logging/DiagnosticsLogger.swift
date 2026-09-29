@@ -23,7 +23,9 @@ import UIKit
 /// A Diagnostics Logger to log messages to which will end up in the Diagnostics Report if using the default `LogsReporter`.
 /// Will keep a `.txt` log in the Application Support directory with the latest logs with a max size of 3 MB.
 public final class DiagnosticsLogger: Sendable {
-    static let standard = DiagnosticsLogger()
+    public static let standard = DiagnosticsLogger()
+
+     public init() { }
 
     static let maximumLogSize = 3 * 1024 * 1024 // 3 MB
 
@@ -86,6 +88,12 @@ public final class DiagnosticsLogger: Sendable {
         try standard.setup()
     }
 
+     /// Sets up a custom logger instance.
+     /// - Parameter logger: The `DiagnosticsLogger` instance to set up.
+     public static func setup(_ logger: DiagnosticsLogger) throws {
+         try logger.setup()
+     }
+
     /// Logs the given message for the diagnostics report.
     /// - Parameters:
     ///   - message: The message to log.
@@ -117,7 +125,7 @@ public final class DiagnosticsLogger: Sendable {
 // MARK: - Setup
 extension DiagnosticsLogger {
 
-    private func setup() throws {
+    func setup() throws {
         if !FileManager.default.fileExists(atPath: DiagnosticsLogger.logFileLocation.path) {
             try FileManager.default
                 .createDirectory(atPath: FileManager.default.applicationSupportDirectory.path, withIntermediateDirectories: true, attributes: nil)

@@ -1,16 +1,24 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "ExceptionCatcher",
-        "repositoryURL": "https://github.com/sindresorhus/ExceptionCatcher",
-        "state": {
-          "branch": null,
-          "revision": "a7acaf40f8bd67a1f3a05a14de5b6a861ac3d1ac",
-          "version": "2.0.1"
-        }
+  "originHash" : "964d1c99e81b0c912ad53c0d25d504fe1f71f2f298272e86e64dac1e6f052be1",
+  "pins" : [
+    {
+      "identity" : "exceptioncatcher",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sindresorhus/ExceptionCatcher",
+      "state" : {
+        "revision" : "a7acaf40f8bd67a1f3a05a14de5b6a861ac3d1ac",
+        "version" : "2.0.1"
       }
-    ]
-  },
-  "version": 1
+    },
+    {
+      "identity" : "swift-log",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-log",
+      "state" : {
+        "revision" : "3ffafb9722d5d918c614feb496c8789a3b59d222",
+        "version" : "1.15.0"
+      }
+    }
+  ],
+  "version" : 3
 }
